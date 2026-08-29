@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0.0",
+  "run": {
+    "task_name": "dashboard-demo",
+    "dashboard_template": "generic",
+    "dashboard_refresh_seconds": 2
+  },
+  "randomness": {
+    "seeds": {
+      "python": 7
+    }
+  },
+  "workload": {
+    "steps": 15,
+    "step_label": "sample",
+    "interval_seconds": 2,
+    "value_min": 1,
+    "value_max": 3
+  }
+}

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Local policy enforcement (AGENTS.md section 18). Enable with:
+#   git config core.hooksPath .githooks
+set -e
+python scripts/validate_repo.py
+python -m pytest -q

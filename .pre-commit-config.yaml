@@ -1,0 +1,15 @@
+repos:
+  - repo: local
+    hooks:
+      - id: validate-repo
+        name: Repository architecture validation
+        entry: python scripts/validate_repo.py
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: policy-tests
+        name: Unit and architecture tests
+        entry: python -m pytest -q
+        language: system
+        pass_filenames: false
+        always_run: true

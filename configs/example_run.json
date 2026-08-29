@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0.0",
+  "run": {
+    "task_name": "demo-graph-of-thought",
+    "dashboard_template": "generic",
+    "dashboard_refresh_seconds": 0
+  },
+  "randomness": {
+    "seeds": {
+      "python": 12345
+    }
+  },
+  "workload": {
+    "steps": 20,
+    "step_label": "thought",
+    "interval_seconds": 0,
+    "value_min": 0,
+    "value_max": 1
+  }
+}

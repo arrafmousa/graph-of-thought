@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0.0",
+  "type": "object",
+  "required": ["schema_version", "run", "randomness", "workload"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "run": {
+      "type": "object",
+      "required": ["task_name", "dashboard_template", "dashboard_refresh_seconds"],
+      "properties": {
+        "task_name": { "type": "string" },
+        "dashboard_template": {
+          "type": "string",
+          "enum": ["generic", "training", "inference", "evaluation"]
+        },
+        "dashboard_refresh_seconds": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "randomness": {
+      "type": "object",
+      "required": ["seeds"],
+      "properties": {
+        "seeds": {
+          "type": "object",
+          "required": ["python"],
+          "properties": {
+            "python": { "type": "integer" }
+          }
+        }
+      }
+    },
+    "workload": {
+      "type": "object",
+      "required": ["steps", "step_label", "interval_seconds", "value_min", "value_max"],
+      "properties": {
+        "steps": { "type": "integer", "minimum": 1 },
+        "step_label": { "type": "string" },
+        "interval_seconds": { "type": "number", "minimum": 0 },
+        "value_min": { "type": "number" },
+        "value_max": { "type": "number" }
+      }
+    }
+  }
+}
