@@ -19,6 +19,11 @@ Key invariants (see `AGENTS.md` for the full, binding text):
   work before a valid manifest and telemetry stream exist.
 - **Secrets never enter artifacts.** Use `.env` (git-ignored); document names in
   `.env.example`.
+- **GPU runs are remote (Colab).** The local machine has no GPU. Commit + push to
+  GitHub, then run via `notebooks/colab_run.ipynb`. On the remote there is no local
+  data access — datasets and models come from the Hugging Face Hub (explicit repo
+  IDs/revisions in `configs/`), and `output/<run_id>/` is zipped and downloaded back.
+  See `AGENTS.md` §31.
 - **Enforcement is executable.** Run `python scripts/validate_repo.py` and the
   test suite before declaring a task done; a task is incomplete if the repository
   violates `AGENTS.md`.

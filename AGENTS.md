@@ -982,3 +982,41 @@ At minimum bootstrap:
 - CI policy check.
 
 The purpose of this file is not merely to describe desired style. The repository must progressively encode these commandments into executable constraints so violations become difficult to introduce accidentally.
+
+---
+
+## 31. Remote GPU Execution Model (Colab)
+
+The local development machine has no GPU. GPU workloads (training, GPU inference, benchmarking) run on a remote Google Colab runtime, not locally. This section governs how such runs are prepared, executed, and returned.
+
+### 31.1 Execution flow
+
+1. Develop and validate locally on CPU as usual; keep `python scripts/validate_repo.py` and the test suite green.
+2. Commit and push to the GitHub remote (`origin`).
+3. On Colab, run `notebooks/colab_run.ipynb`, which clones the repository and runs the entrypoint (`python scripts/run.py --config ...`) on a GPU runtime.
+4. The remote runs the exact pushed commit. Uncommitted local changes do NOT run remotely — push first.
+
+### 31.2 No local data or filesystem coupling on the remote
+
+- The remote has no access to this machine's files. Code MUST NOT depend on local paths that are not part of the git repository.
+- All datasets and models MUST be obtained from the Hugging Face Hub (e.g. `datasets.load_dataset`, `transformers`, `huggingface_hub`), addressed by explicit repository IDs and revisions.
+- Credentials such as `HF_TOKEN` are provided via environment/Colab secrets and are never committed (section 8).
+
+### 31.3 External identifiers are configuration
+
+- Dataset IDs, model IDs, and their revisions are project-owned choices and MUST be explicit in `configs/` and recorded in the run manifest (sections 7 and 25). No hidden default dataset or model.
+
+### 31.4 Results return path
+
+- Runs write to `output/<run_id>/` on the remote (manifest, telemetry, dashboard, artifacts) exactly as locally.
+- The Colab workflow MUST package the run directory (e.g. zip `output/<run_id>/`) and download it from the remote.
+- Downloaded artifacts are placed under this repository's git-ignored `output/` for inspection. Automatic upload to a shared store is permitted when explicitly configured; the manifest remains the source of truth.
+
+### 31.5 Repository access from the remote
+
+- The remote clone requires read access: either the repository is public, or a token (e.g. `GH_TOKEN`) is supplied as a Colab secret. Tokens are never committed.
+
+### 31.6 Invariants preserved
+
+- Reproducibility, manifest/telemetry/dashboard generation, one-class-per-file, and dependency-direction rules apply identically to remote runs. Remote execution changes only where code runs, never the engineering contract.
+
