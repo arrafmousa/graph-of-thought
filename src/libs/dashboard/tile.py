@@ -31,3 +31,7 @@ class Tile(ABC):
     @abstractmethod
     def render(self) -> str:
         """Return an HTML fragment representing the tile's current state."""
+
+    @abstractmethod
+    def render_text(self) -> str:
+        """Return a plain-text representation for terminal output."""

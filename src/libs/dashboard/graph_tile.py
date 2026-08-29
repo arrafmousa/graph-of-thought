@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from . import html_utils
+from . import text_utils
 from .tile import Tile
 
 
@@ -29,3 +30,13 @@ class GraphTile(Tile):
 
     def render(self) -> str:
         return html_utils.line_chart(self._points, f"{self._y_label} vs {self._x_label}")
+
+    def render_text(self) -> str:
+        if not self._points:
+            return f"{self._y_label} vs {self._x_label}: (no data)"
+        ys = [y for _x, y in self._points]
+        spark = text_utils.sparkline(ys)
+        return (
+            f"{self._y_label} vs {self._x_label}  "
+            f"n={len(ys)} last={ys[-1]:.4g} min={min(ys):.4g} max={max(ys):.4g}\n{spark}"
+        )

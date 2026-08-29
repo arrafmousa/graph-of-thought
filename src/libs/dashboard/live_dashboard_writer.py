@@ -18,7 +18,7 @@ class LiveDashboardWriter:
         self._dashboard = dashboard
         self._output_path = Path(output_path)
         self._refresh_seconds = refresh_seconds
-        dashboard.set_update_listener(self.write)
+        dashboard.add_update_listener(self.write)
 
     def write(self) -> None:
         self._output_path.parent.mkdir(parents=True, exist_ok=True)

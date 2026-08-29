@@ -6,14 +6,15 @@
     "schema_version": { "type": "string" },
     "run": {
       "type": "object",
-      "required": ["task_name", "dashboard_template", "dashboard_refresh_seconds"],
+      "required": ["task_name", "dashboard_template", "dashboard_refresh_seconds", "terminal_progress"],
       "properties": {
         "task_name": { "type": "string" },
         "dashboard_template": {
           "type": "string",
           "enum": ["generic", "training", "inference", "evaluation"]
         },
-        "dashboard_refresh_seconds": { "type": "integer", "minimum": 0 }
+        "dashboard_refresh_seconds": { "type": "integer", "minimum": 0 },
+        "terminal_progress": { "type": "boolean" }
       }
     },
     "randomness": {

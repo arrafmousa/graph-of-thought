@@ -45,6 +45,7 @@ def test_workload_values_stay_within_configured_range(tmp_path):
             "task_name": "range-test",
             "dashboard_template": "generic",
             "dashboard_refresh_seconds": 0,
+            "terminal_progress": False,
         },
         "randomness": {"seeds": {"python": 42}},
         # interval_seconds 0 keeps the test fast while exercising value bounds.

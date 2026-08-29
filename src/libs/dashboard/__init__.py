@@ -19,6 +19,7 @@ from .graph_tile import GraphTile
 from .inference_dashboard import InferenceDashboard
 from .live_dashboard_writer import LiveDashboardWriter
 from .table_tile import TableTile
+from .terminal_dashboard_writer import TerminalDashboardWriter
 from .tile import Tile
 from .training_dashboard import TrainingDashboard
 
@@ -32,6 +33,7 @@ __all__ = [
     "InferenceDashboard",
     "LiveDashboardWriter",
     "TableTile",
+    "TerminalDashboardWriter",
     "Tile",
     "TrainingDashboard",
 ]

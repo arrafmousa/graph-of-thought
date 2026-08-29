@@ -36,7 +36,7 @@ def test_missing_required_field_raises(tmp_path):
 def test_wrong_type_raises(tmp_path):
     payload = {
         "schema_version": "1.0.0",
-        "run": {"task_name": "x", "dashboard_template": "generic", "dashboard_refresh_seconds": 0},
+        "run": {"task_name": "x", "dashboard_template": "generic", "dashboard_refresh_seconds": 0, "terminal_progress": False},
         "randomness": {"seeds": {"python": 1}},
         "workload": {"steps": "not-an-int", "step_label": "t", "interval_seconds": 0,
                      "value_min": 0, "value_max": 1},
@@ -50,7 +50,7 @@ def test_wrong_type_raises(tmp_path):
 def test_enum_violation_raises(tmp_path):
     payload = {
         "schema_version": "1.0.0",
-        "run": {"task_name": "x", "dashboard_template": "nope", "dashboard_refresh_seconds": 0},
+        "run": {"task_name": "x", "dashboard_template": "nope", "dashboard_refresh_seconds": 0, "terminal_progress": False},
         "randomness": {"seeds": {"python": 1}},
         "workload": {"steps": 1, "step_label": "t", "interval_seconds": 0,
                      "value_min": 0, "value_max": 1},

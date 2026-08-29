@@ -9,13 +9,19 @@ from __future__ import annotations
 
 import logging
 import random
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from libs.config import ConfigLoader
-from libs.dashboard import DashboardRegistry, DashboardRenderer, LiveDashboardWriter
+from libs.dashboard import (
+    DashboardRegistry,
+    DashboardRenderer,
+    LiveDashboardWriter,
+    TerminalDashboardWriter,
+)
 from libs.manifest import ManifestValidator, RunManifest
 from libs.runcontext import EnvironmentProbe, GitProbe, RunIdFactory
 from libs.telemetry import TelemetryWriter
@@ -52,6 +58,8 @@ class RunOrchestrator:
             dashboard, run_dir / "dashboard.html", config["run"]["dashboard_refresh_seconds"]
         )
         live_writer.write()
+        if config["run"]["terminal_progress"]:
+            TerminalDashboardWriter(dashboard, sys.stdout)
         telemetry = TelemetryWriter(run_dir / "telemetry.jsonl", run_id, dashboard=dashboard)
         manifest = RunManifest.create(
             run_id=run_id,

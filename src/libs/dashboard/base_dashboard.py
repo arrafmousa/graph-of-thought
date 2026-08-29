@@ -10,7 +10,7 @@ only notifies a registered listener whenever any component updates.
 """
 from __future__ import annotations
 
-from typing import Callable, Optional
+from typing import Callable
 
 from . import html_utils
 from .table_tile import TableTile
@@ -25,7 +25,7 @@ class BaseDashboard:
     def __init__(self) -> None:
         self._tiles: dict[str, Tile] = {}
         self._run_id = "?"
-        self._listener: Optional[Callable[[], None]] = None
+        self._listeners: list[Callable[[], None]] = []
         self._add("summary", TableTile(["metric", "value"]))
         self._build()
 
@@ -36,12 +36,12 @@ class BaseDashboard:
         self._tiles[name] = tile
         tile.set_listener(self._notify)
 
-    def set_update_listener(self, callback: Callable[[], None]) -> None:
-        self._listener = callback
+    def add_update_listener(self, callback: Callable[[], None]) -> None:
+        self._listeners.append(callback)
 
     def _notify(self) -> None:
-        if self._listener is not None:
-            self._listener()
+        for callback in self._listeners:
+            callback()
 
     def components(self) -> dict[str, Tile]:
         return self._tiles
@@ -62,3 +62,9 @@ class BaseDashboard:
                 f"{tile.render()}</section>"
             )
         return html_utils.document(f"Run {self._run_id}", "".join(sections), refresh_seconds)
+
+    def render_text(self) -> str:
+        blocks = [f"=== Run {self._run_id} ==="]
+        for name, tile in self._tiles.items():
+            blocks.append(f"\n[{name}]\n{tile.render_text()}")
+        return "\n".join(blocks)

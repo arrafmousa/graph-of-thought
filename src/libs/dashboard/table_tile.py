@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from . import html_utils
+from . import text_utils
 from .tile import Tile
 
 
@@ -29,3 +30,6 @@ class TableTile(Tile):
 
     def render(self) -> str:
         return html_utils.table(self._columns, self._rows)
+
+    def render_text(self) -> str:
+        return text_utils.ascii_table(self._columns, self._rows)

@@ -3,7 +3,8 @@
   "run": {
     "task_name": "demo-graph-of-thought",
     "dashboard_template": "generic",
-    "dashboard_refresh_seconds": 0
+    "dashboard_refresh_seconds": 0,
+    "terminal_progress": true
   },
   "randomness": {
     "seeds": {

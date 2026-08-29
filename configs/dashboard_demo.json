@@ -3,7 +3,8 @@
   "run": {
     "task_name": "dashboard-demo",
     "dashboard_template": "generic",
-    "dashboard_refresh_seconds": 2
+    "dashboard_refresh_seconds": 2,
+    "terminal_progress": true
   },
   "randomness": {
     "seeds": {
