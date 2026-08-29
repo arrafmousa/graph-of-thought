@@ -46,6 +46,17 @@ execution is remote. This is the authoritative flow from `AGENTS.md` section 31.
    python scripts/validate_run.py output/<run_id>
    ```
 
+## Outputs & model weights (zip and download)
+All run artifacts — output files, folders, checkpoints, and **model weights** — are
+written to `output/<run_id>/` on the Colab runtime's **local, ephemeral** disk. When
+the session ends they are lost, so the run directory MUST be **zipped and downloaded**
+before you disconnect:
+- Ensure training code writes weights/checkpoints under `output/<run_id>/`
+  (e.g. `output/<run_id>/checkpoints/`, `output/<run_id>/artifacts/`), not to arbitrary
+  paths, so they land inside the archive.
+- The notebook's final cell zips `output/<run_id>/` and triggers a browser download;
+  copy the unzipped folder into this repo's git-ignored `output/`.
+
 ## Notes
 - Uncommitted local changes do NOT run remotely — always push first.
 - Manifest, telemetry, and dashboard are produced identically on the remote; keep them.
