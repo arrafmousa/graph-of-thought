@@ -1,0 +1,53 @@
+---
+name: remote-gpu-run
+description: 'Run this repository''s GPU workloads on Google Colab (the local machine has no GPU). Use when: training a model, GPU inference, benchmarking, "run on GPU", "train remotely", "run on Colab", "remote run", "push and run", "run on T4/A100", GPU experiment, or any run that needs CUDA. Datasets and models come from the Hugging Face Hub only; results are downloaded back into output/. See AGENTS.md section 31.'
+argument-hint: 'Optional: config to run on the remote (e.g. configs/train_sst2.json)'
+---
+
+# Remote GPU Run (Colab)
+
+Execute GPU workloads for this repo on Google Colab. Development is local/CPU; GPU
+execution is remote. This is the authoritative flow from `AGENTS.md` section 31.
+
+## When to use
+- Training, GPU inference, or benchmarking that needs a GPU (T4/A100/…).
+- Triggers: "run on GPU", "train the model", "run on Colab", "remote run".
+- For CPU-only local iteration use the `local-cpu-dev` skill instead.
+
+## Hard requirements (section 31)
+- **No local data on the remote.** All datasets and models MUST load from the
+  Hugging Face Hub, addressed by explicit repo IDs + revisions in `configs/`.
+- **Repo must be reachable from Colab**: either public, or a `GH_TOKEN` Colab secret.
+- **Secrets** (e.g. `HF_TOKEN`) come from Colab secrets/env, never committed.
+
+## Procedure
+1. Validate locally first — both must pass:
+   ```
+   python scripts/validate_repo.py
+   python -m pytest -q
+   ```
+2. Ensure the run config in `configs/` names explicit HF model/dataset IDs + revisions
+   (no hidden defaults). These get recorded in the run manifest.
+3. Commit and push (the remote runs the exact pushed commit):
+   ```
+   git add -A
+   git commit -m "<message>"
+   git push
+   ```
+4. On Colab, set **Runtime → Change runtime type → GPU**, then open
+   `notebooks/colab_run.ipynb` (or File → Open notebook → GitHub →
+   `arrafmousa/graph-of-thought`).
+5. Run the cells in order: clone → (install deps + HF auth) →
+   `python scripts/run.py --config <config>` → the final cell zips and downloads
+   `output/<run_id>/`.
+6. Copy the downloaded `output/<run_id>/` into this repo's git-ignored `output/`,
+   then validate it locally:
+   ```
+   python scripts/validate_run.py output/<run_id>
+   ```
+
+## Notes
+- Uncommitted local changes do NOT run remotely — always push first.
+- Manifest, telemetry, and dashboard are produced identically on the remote; keep them.
+- The GPU is only exercised by code that uses it (e.g. a training orchestrator);
+  the demo workload is CPU-only.
