@@ -98,11 +98,17 @@ class SentimentFinetuner:
             self._model_id, revision=self._model_revision, num_labels=self._num_labels
         )
 
+        seen_steps: set[int] = set()
+
         class _ReporterCallback(TrainerCallback):
             def on_log(self, args, state, control, logs=None, **kwargs):
-                if logs:
+                if logs and "loss" in logs:
+                    step = int(state.global_step)
+                    if step in seen_steps:
+                        return
+                    seen_steps.add(step)
                     numeric = {k: float(v) for k, v in logs.items() if isinstance(v, (int, float))}
-                    reporter.report_step(int(state.global_step), numeric)
+                    reporter.report_step(step, numeric)
 
         def compute_metrics(eval_pred):
             logits, labels = eval_pred
@@ -134,7 +140,24 @@ class SentimentFinetuner:
 
         reporter.report_message("training started")
         trainer.train()
+
+        # Guarantee the loss / learning-rate graphs are complete: replay the
+        # trainer's own log history for any steps the live callback missed.
+        for index, entry in enumerate(trainer.state.log_history):
+            if "loss" not in entry:
+                continue
+            step = int(entry.get("step", index))
+            if step in seen_steps:
+                continue
+            seen_steps.add(step)
+            numeric = {k: float(v) for k, v in entry.items() if isinstance(v, (int, float))}
+            reporter.report_step(step, numeric)
+
         metrics = trainer.evaluate()
+        reporter.report_message(
+            "evaluation: "
+            + ", ".join(f"{k}={v:.4f}" for k, v in metrics.items() if isinstance(v, (int, float)))
+        )
 
         final_dir = checkpoints / "final"
         trainer.save_model(str(final_dir))
