@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0.0",
+  "type": "object",
+  "required": ["schema_version", "run", "randomness", "training"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "run": {
+      "type": "object",
+      "required": ["task_name", "dashboard_template", "dashboard_refresh_seconds", "terminal_progress"],
+      "properties": {
+        "task_name": { "type": "string" },
+        "dashboard_template": {
+          "type": "string",
+          "enum": ["generic", "training", "inference", "evaluation"]
+        },
+        "dashboard_refresh_seconds": { "type": "integer", "minimum": 0 },
+        "terminal_progress": { "type": "boolean" }
+      }
+    },
+    "randomness": {
+      "type": "object",
+      "required": ["seeds"],
+      "properties": {
+        "seeds": {
+          "type": "object",
+          "required": ["python"],
+          "properties": { "python": { "type": "integer" } }
+        }
+      }
+    },
+    "training": {
+      "type": "object",
+      "required": [
+        "model_id", "model_revision", "dataset_id", "dataset_revision", "dataset_config",
+        "text_field", "label_field", "num_labels", "train_samples", "eval_samples",
+        "num_epochs", "batch_size", "learning_rate", "max_length", "precision", "seed"
+      ],
+      "properties": {
+        "model_id": { "type": "string" },
+        "model_revision": { "type": "string" },
+        "dataset_id": { "type": "string" },
+        "dataset_revision": { "type": "string" },
+        "dataset_config": { "type": "string" },
+        "text_field": { "type": "string" },
+        "label_field": { "type": "string" },
+        "num_labels": { "type": "integer", "minimum": 2 },
+        "train_samples": { "type": "integer", "minimum": 1 },
+        "eval_samples": { "type": "integer", "minimum": 1 },
+        "num_epochs": { "type": "integer", "minimum": 1 },
+        "batch_size": { "type": "integer", "minimum": 1 },
+        "learning_rate": { "type": "number", "minimum": 0 },
+        "max_length": { "type": "integer", "minimum": 1 },
+        "precision": { "type": "string", "enum": ["fp16", "fp32"] },
+        "seed": { "type": "integer" }
+      }
+    }
+  }
+}

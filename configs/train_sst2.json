@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0.0",
+  "run": {
+    "task_name": "sst2-sentiment-finetune",
+    "dashboard_template": "training",
+    "dashboard_refresh_seconds": 2,
+    "terminal_progress": true
+  },
+  "randomness": {
+    "seeds": {
+      "python": 42
+    }
+  },
+  "training": {
+    "model_id": "distilbert-base-uncased",
+    "model_revision": "main",
+    "dataset_id": "glue",
+    "dataset_revision": "main",
+    "dataset_config": "sst2",
+    "text_field": "sentence",
+    "label_field": "label",
+    "num_labels": 2,
+    "train_samples": 100,
+    "eval_samples": 100,
+    "num_epochs": 3,
+    "batch_size": 16,
+    "learning_rate": 0.00005,
+    "max_length": 128,
+    "precision": "fp16",
+    "seed": 42
+  }
+}

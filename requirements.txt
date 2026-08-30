@@ -1,0 +1,7 @@
+# Runtime dependencies for GPU training runs (installed on the Colab remote).
+# NOTE: torch is intentionally omitted — Colab ships a CUDA build of torch; do
+# not reinstall it here or you may downgrade to a CPU-only build.
+transformers>=4.40
+datasets>=2.19
+accelerate>=0.30
+numpy
