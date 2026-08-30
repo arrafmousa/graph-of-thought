@@ -34,9 +34,13 @@ execution is remote. This is the authoritative flow from `AGENTS.md` section 31.
    git commit -m "<message>"
    git push
    ```
-4. On Colab, set **Runtime → Change runtime type → GPU**, then open
-   `notebooks/colab_run.ipynb` (or File → Open notebook → GitHub →
-   `arrafmousa/graph-of-thought`).
+4. Open the notebook in Colab. Fastest is the **Open in Colab** badge at the top of
+   `notebooks/colab_run.ipynb`, or this direct link (pins the `master` branch):
+   ```
+   https://colab.research.google.com/github/arrafmousa/graph-of-thought/blob/master/notebooks/colab_run.ipynb
+   ```
+   (Alternatively: File → Open notebook → GitHub → `arrafmousa/graph-of-thought`, branch
+   `master`.) Then set **Runtime → Change runtime type → GPU**.
 5. Run the cells in order: clone → (install deps + HF auth) →
    `python scripts/run.py --config <config>` → the final cell zips and downloads
    `output/<run_id>/`.
