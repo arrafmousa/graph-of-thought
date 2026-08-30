@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0.0",
+  "run": {
+    "task_name": "graph-gsm8k-llama1b",
+    "dashboard_template": "evaluation",
+    "dashboard_refresh_seconds": 0,
+    "terminal_progress": true
+  },
+  "randomness": {
+    "seeds": { "python": 20260830 }
+  },
+  "dataset": {
+    "provider_class": "Gsm8kDataset",
+    "dataset_id": "openai/gsm8k",
+    "dataset_revision": "main",
+    "dataset_config": "main",
+    "split": "test",
+    "num_questions": 3,
+    "answer_delimiter": "####"
+  },
+  "model": {
+    "provider_class": "HuggingFaceModelProvider",
+    "model_id": "meta-llama/Llama-3.2-1B-Instruct",
+    "model_revision": "main",
+    "dtype": "float16",
+    "device": "cuda",
+    "hidden_layer": -1,
+    "system_instruction": "Reason through the problem step by step. After the reasoning, state the final numeric answer on a new line in the form '#### <number>'. Do not write anything after the number."
+  },
+  "generation": {
+    "num_chains": 6,
+    "max_new_tokens": 256,
+    "temperature": 0.8,
+    "top_p": 0.95,
+    "batch_size": 2
+  },
+  "graph": {
+    "heuristics": ["token_identity", "hidden_cosine", "pooled_hidden_cosine"],
+    "thresholds": [0.9, 0.95, 0.97],
+    "pooling_k": 4,
+    "depth_policy": "absolute_window",
+    "max_depth_difference": 4,
+    "confidence_window": 8
+  },
+  "report": {
+    "sample_questions": 1,
+    "heuristic": "hidden_cosine",
+    "threshold": 0.95
+  }
+}

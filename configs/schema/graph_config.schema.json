@@ -1,0 +1,124 @@
+{
+  "schema_version": "1.0.0",
+  "type": "object",
+  "required": ["schema_version", "run", "randomness", "dataset", "model", "generation", "graph", "report"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "run": {
+      "type": "object",
+      "required": ["task_name", "dashboard_template", "dashboard_refresh_seconds", "terminal_progress"],
+      "properties": {
+        "task_name": { "type": "string" },
+        "dashboard_template": {
+          "type": "string",
+          "enum": ["generic", "training", "inference", "evaluation"]
+        },
+        "dashboard_refresh_seconds": { "type": "integer", "minimum": 0 },
+        "terminal_progress": { "type": "boolean" }
+      }
+    },
+    "randomness": {
+      "type": "object",
+      "required": ["seeds"],
+      "properties": {
+        "seeds": {
+          "type": "object",
+          "required": ["python"],
+          "properties": {
+            "python": { "type": "integer" }
+          }
+        }
+      }
+    },
+    "dataset": {
+      "type": "object",
+      "required": [
+        "provider_class",
+        "dataset_id",
+        "dataset_revision",
+        "dataset_config",
+        "split",
+        "num_questions",
+        "answer_delimiter"
+      ],
+      "properties": {
+        "provider_class": { "type": "string" },
+        "dataset_id": { "type": "string" },
+        "dataset_revision": { "type": "string" },
+        "dataset_config": { "type": "string" },
+        "split": { "type": "string" },
+        "num_questions": { "type": "integer", "minimum": 1 },
+        "answer_delimiter": { "type": "string" }
+      }
+    },
+    "model": {
+      "type": "object",
+      "required": [
+        "provider_class",
+        "model_id",
+        "model_revision",
+        "dtype",
+        "device",
+        "hidden_layer",
+        "system_instruction"
+      ],
+      "properties": {
+        "provider_class": { "type": "string" },
+        "model_id": { "type": "string" },
+        "model_revision": { "type": "string" },
+        "dtype": { "type": "string" },
+        "device": { "type": "string" },
+        "hidden_layer": { "type": "integer" },
+        "system_instruction": { "type": "string" }
+      }
+    },
+    "generation": {
+      "type": "object",
+      "required": [
+        "num_chains",
+        "max_new_tokens",
+        "temperature",
+        "top_p",
+        "batch_size"
+      ],
+      "properties": {
+        "num_chains": { "type": "integer", "minimum": 1 },
+        "max_new_tokens": { "type": "integer", "minimum": 1 },
+        "temperature": { "type": "number", "minimum": 0 },
+        "top_p": { "type": "number", "minimum": 0 },
+        "batch_size": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "graph": {
+      "type": "object",
+      "required": [
+        "heuristics",
+        "thresholds",
+        "pooling_k",
+        "depth_policy",
+        "max_depth_difference",
+        "confidence_window"
+      ],
+      "properties": {
+        "heuristics": { "type": "array", "items": { "type": "string" } },
+        "thresholds": { "type": "array", "items": { "type": "number" } },
+        "pooling_k": { "type": "integer", "minimum": 1 },
+        "depth_policy": {
+          "type": "string",
+          "enum": ["same_depth", "absolute_window", "unrestricted"]
+        },
+        "max_depth_difference": { "type": "integer", "minimum": 0 },
+        "confidence_window": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "report": {
+      "type": "object",
+      "required": ["sample_questions", "heuristic", "threshold"],
+      "properties": {
+        "sample_questions": { "type": "integer", "minimum": 1 },
+        "heuristic": { "type": "string" },
+        "threshold": { "type": "number" }
+      }
+    }
+  }
+}

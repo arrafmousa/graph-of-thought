@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0.0",
+  "run": {
+    "task_name": "graph-demo-synthetic",
+    "dashboard_template": "evaluation",
+    "dashboard_refresh_seconds": 0,
+    "terminal_progress": true
+  },
+  "randomness": {
+    "seeds": { "python": 12345 }
+  },
+  "dataset": {
+    "provider_class": "SyntheticDataset",
+    "dataset_id": "local/synthetic-arithmetic",
+    "dataset_revision": "v1",
+    "dataset_config": "default",
+    "split": "test",
+    "num_questions": 3,
+    "answer_delimiter": "####"
+  },
+  "model": {
+    "provider_class": "SyntheticModelProvider",
+    "model_id": "local/synthetic-token-model",
+    "model_revision": "v1",
+    "dtype": "float32",
+    "device": "cpu",
+    "hidden_layer": -1,
+    "system_instruction": "Reason step by step and end with '#### <number>'."
+  },
+  "generation": {
+    "num_chains": 6,
+    "max_new_tokens": 24,
+    "temperature": 0.8,
+    "top_p": 0.95,
+    "batch_size": 2
+  },
+  "graph": {
+    "heuristics": ["token_identity", "hidden_cosine", "pooled_hidden_cosine"],
+    "thresholds": [0.9, 0.95, 0.97],
+    "pooling_k": 4,
+    "depth_policy": "absolute_window",
+    "max_depth_difference": 4,
+    "confidence_window": 8
+  },
+  "report": {
+    "sample_questions": 1,
+    "heuristic": "hidden_cosine",
+    "threshold": 0.9
+  }
+}
