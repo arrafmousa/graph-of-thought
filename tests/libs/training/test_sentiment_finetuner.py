@@ -10,7 +10,7 @@ def _finetuner() -> SentimentFinetuner:
     return SentimentFinetuner(
         model_id="distilbert-base-uncased",
         model_revision="main",
-        dataset_id="glue",
+        dataset_id="nyu-mll/glue",
         dataset_revision="main",
         dataset_config="sst2",
         text_field="sentence",
@@ -37,6 +37,6 @@ def test_train_config_matches_schema():
     config = loader.load(_REPO / "configs" / "train_sst2.json")
     t = config["training"]
     assert t["model_id"] == "distilbert-base-uncased"
-    assert t["dataset_id"] == "glue" and t["dataset_config"] == "sst2"
+    assert t["dataset_id"] == "nyu-mll/glue" and t["dataset_config"] == "sst2"
     assert t["train_samples"] == 100
     assert config["run"]["dashboard_template"] == "training"

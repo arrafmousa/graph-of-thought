@@ -14,7 +14,7 @@
   "training": {
     "model_id": "distilbert-base-uncased",
     "model_revision": "main",
-    "dataset_id": "glue",
+    "dataset_id": "nyu-mll/glue",
     "dataset_revision": "main",
     "dataset_config": "sst2",
     "text_field": "sentence",
