@@ -3,15 +3,21 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from libs.reasoning_graph import (
     CandidateFilter,
+    DepthPolicy,
     GraphConsolidator,
     GraphStatistics,
     HiddenCosineMetric,
     LoadedChain,
     LoadedToken,
+    MergeHeuristic,
     MergeRegistry,
+    RepresentativePolicy,
     RepresentativeSelector,
+    RepresentativeSelectorRegistry,
     TokenIdentityMetric,
     TraceLoader,
 )
@@ -43,7 +49,7 @@ def _consolidator() -> GraphConsolidator:
 
 def test_consolidation_produces_join_and_valid_dag():
     graph = _consolidator().consolidate(
-        chains=_chains(), metric=HiddenCosineMetric(), threshold=0.99, pooling_k=4
+        chains=_chains(), metric=HiddenCosineMetric(), threshold=0.99, pooling_k=4, context_window=6
     )
     stats = GraphStatistics().compute(graph)
     assert graph.is_dag() is True
@@ -55,17 +61,17 @@ def test_consolidation_produces_join_and_valid_dag():
 
 def test_consolidation_is_deterministic():
     a = _consolidator().consolidate(
-        chains=_chains(), metric=HiddenCosineMetric(), threshold=0.99, pooling_k=4
+        chains=_chains(), metric=HiddenCosineMetric(), threshold=0.99, pooling_k=4, context_window=6
     )
     b = _consolidator().consolidate(
-        chains=_chains(), metric=HiddenCosineMetric(), threshold=0.99, pooling_k=4
+        chains=_chains(), metric=HiddenCosineMetric(), threshold=0.99, pooling_k=4, context_window=6
     )
     assert json.dumps(a.to_dict(), sort_keys=True) == json.dumps(b.to_dict(), sort_keys=True)
 
 
 def test_high_threshold_prevents_merges():
     graph = _consolidator().consolidate(
-        chains=_chains(), metric=HiddenCosineMetric(), threshold=1.01, pooling_k=4
+        chains=_chains(), metric=HiddenCosineMetric(), threshold=1.01, pooling_k=4, context_window=6
     )
     stats = GraphStatistics().compute(graph)
     assert stats["merge_events"] == 0
@@ -98,6 +104,34 @@ def test_registry_builds_metrics():
     registry = MergeRegistry.with_builtin_metrics()
     assert registry.create("hidden_cosine").name == "hidden_cosine"
     assert registry.create("token_identity").name == "token_identity"
+
+
+def test_enums_are_discoverable_and_map_to_registrations():
+    registry = MergeRegistry.with_builtin_metrics()
+    assert set(registry.available()) == set(MergeHeuristic)
+    # Every heuristic enum value builds a metric.
+    for heuristic in MergeHeuristic:
+        assert registry.create(heuristic).requires_hidden() in (True, False)
+    assert {p.value for p in DepthPolicy} == {"same_depth", "absolute_window", "unrestricted"}
+    assert RepresentativePolicy.RECENT_MEAN_LOGPROB.value == "recent_mean_logprob"
+
+
+def test_representative_selector_registry():
+    registry = RepresentativeSelectorRegistry.with_builtin_selectors()
+    assert RepresentativePolicy.RECENT_MEAN_LOGPROB in registry.available()
+    selector = registry.create("recent_mean_logprob", window=8)
+    assert isinstance(selector, RepresentativeSelector)
+    with pytest.raises(KeyError):
+        registry.create("missing", window=8)
+
+
+def test_merge_events_include_chain_context():
+    graph = _consolidator().consolidate(
+        chains=_chains(), metric=HiddenCosineMetric(), threshold=0.99, pooling_k=4, context_window=6
+    )
+    assert graph.merges
+    event = graph.merges[0]
+    assert "context_a" in event and "context_b" in event
 
 
 def test_trace_loader_round_trip(tmp_path):

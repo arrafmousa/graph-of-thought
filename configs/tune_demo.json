@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "run": {
-    "task_name": "graph-demo-synthetic",
+    "task_name": "tune-demo-synthetic",
     "dashboard_template": "evaluation",
     "dashboard_refresh_seconds": 0,
     "terminal_progress": true
@@ -15,7 +15,7 @@
     "dataset_revision": "v1",
     "dataset_config": "default",
     "split": "test",
-    "num_questions": 3,
+    "num_questions": 8,
     "answer_delimiter": "####"
   },
   "model": {
@@ -34,17 +34,17 @@
     "top_p": 0.95,
     "batch_size": 2
   },
-  "graph": {
-    "heuristic": "hidden_cosine",
-    "threshold": 0.9,
+  "tuning": {
+    "heuristics": ["token_identity", "hidden_cosine", "pooled_hidden_cosine"],
+    "thresholds": [0.9, 0.95, 0.97],
     "pooling_k": 4,
     "depth_policy": "absolute_window",
     "max_depth_difference": 4,
     "confidence_window": 8,
     "representative_policy": "recent_mean_logprob",
-    "context_window": 6
-  },
-  "report": {
-    "sample_questions": 1
+    "context_window": 6,
+    "high_sample_count": 5,
+    "edge_sample_count": 5,
+    "edge_margin": 0.02
   }
 }

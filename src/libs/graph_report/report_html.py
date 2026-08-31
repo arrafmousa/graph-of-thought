@@ -132,6 +132,7 @@ def consolidated_svg(graph: dict[str, Any]) -> str:
     nodes = graph.get("nodes", [])
     edges = graph.get("edges", [])
     root_id = graph.get("root_id", -1)
+    node_by_id: dict[int, dict[str, Any]] = {node["cluster_id"]: node for node in nodes}
     by_depth: dict[int, list[dict[str, Any]]] = {}
     depth_of = {root_id: -1}
     for node in nodes:
@@ -168,9 +169,23 @@ def consolidated_svg(graph: dict[str, Any]) -> str:
         label = "root" if cluster_id == root_id else str(cluster_id)
         parts.append(
             f"<circle cx=\"{x}\" cy=\"{y}\" r=\"{radius}\" fill=\"{fill}\" "
-            f"stroke=\"#0f1117\" stroke-width=\"1\"><title>cluster {escape(cluster_id)}</title></circle>"
+            f"stroke=\"#0f1117\" stroke-width=\"1\"><title>{escape(_node_title(cluster_id, node_by_id.get(cluster_id)))}</title></circle>"
             f"<text x=\"{x}\" y=\"{y - radius - 3}\" fill=\"#9fb3c8\" font-size=\"10\" "
             f"text-anchor=\"middle\">{escape(label)}</text>"
         )
     parts.append("</svg>")
     return "".join(parts)
+
+
+def _node_title(cluster_id: int, node: Any) -> str:
+    """Hover text for a consolidated node: cluster, member chains, and tokens."""
+    if not node:
+        return f"cluster {cluster_id} (root)"
+    members = node.get("members", [])
+    chains = sorted({member[0] for member in members})
+    tokens = node.get("texts", [])
+    pairs = ", ".join(f"chain {member[0]}@{member[1]}" for member in members)
+    token_text = " | ".join(str(t) for t in tokens)
+    return (
+        f"cluster {cluster_id} | chains {chains} | tokens: {token_text} | members: {pairs}"
+    )

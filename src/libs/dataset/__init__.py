@@ -9,6 +9,7 @@ parse a model completion back into a predicted answer and judge correctness.
 """
 from .dataset_entry import DatasetEntry
 from .dataset_provider import DatasetProvider
+from .dataset_provider_kind import DatasetProviderKind
 from .dataset_registry import DatasetRegistry
 from .gsm8k_dataset import Gsm8kDataset
 from .synthetic_dataset import SyntheticDataset
@@ -16,6 +17,7 @@ from .synthetic_dataset import SyntheticDataset
 __all__ = [
     "DatasetEntry",
     "DatasetProvider",
+    "DatasetProviderKind",
     "DatasetRegistry",
     "Gsm8kDataset",
     "SyntheticDataset",

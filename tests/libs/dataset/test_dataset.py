@@ -5,6 +5,7 @@ import pytest
 
 from libs.dataset import (
     DatasetEntry,
+    DatasetProviderKind,
     DatasetRegistry,
     Gsm8kDataset,
     SyntheticDataset,
@@ -69,7 +70,7 @@ def test_gsm8k_prediction_uses_last_number_after_delimiter():
 def test_registry_creates_known_and_rejects_unknown():
     registry = DatasetRegistry.with_builtin_providers()
     provider = registry.create(
-        "SyntheticDataset",
+        "synthetic",
         dataset_id="x",
         dataset_revision="v1",
         dataset_config="c",
@@ -78,3 +79,9 @@ def test_registry_creates_known_and_rejects_unknown():
     assert isinstance(provider, SyntheticDataset)
     with pytest.raises(KeyError):
         registry.create("Nope")
+
+
+def test_provider_kinds_are_discoverable():
+    registry = DatasetRegistry.with_builtin_providers()
+    assert set(registry.available()) == set(DatasetProviderKind)
+    assert {k.value for k in DatasetProviderKind} == {"gsm8k", "synthetic"}

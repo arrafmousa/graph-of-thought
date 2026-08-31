@@ -42,7 +42,7 @@ from libs.reasoning_graph import (
     GraphConsolidator,
     GraphStatistics,
     MergeRegistry,
-    RepresentativeSelector,
+    RepresentativeSelectorRegistry,
     TraceLoader,
 )
 from libs.runcontext import EnvironmentProbe, GitProbe, RunIdFactory
@@ -66,6 +66,7 @@ class GraphOrchestrator:
         self._dataset_registry = DatasetRegistry.with_builtin_providers()
         self._model_registry = ModelProviderRegistry.with_builtin_providers()
         self._merge_registry = MergeRegistry.with_builtin_metrics()
+        self._representative_registry = RepresentativeSelectorRegistry.with_builtin_selectors()
 
     def run(self, config_path: Path, entrypoint: str, command: str) -> Path:
         config = self._config_loader.load(config_path)
@@ -97,10 +98,10 @@ class GraphOrchestrator:
             seeds=config["randomness"]["seeds"],
             inputs={"config_path": str(config_path)},
             model={
-                "provider_class": config["model"]["provider_class"],
+                "provider": config["model"]["provider"],
                 "model_id": config["model"]["model_id"],
                 "model_revision": config["model"]["model_revision"],
-                "dataset_provider_class": config["dataset"]["provider_class"],
+                "dataset_provider": config["dataset"]["provider"],
                 "dataset_id": config["dataset"]["dataset_id"],
                 "dataset_revision": config["dataset"]["dataset_revision"],
                 "task": "reasoning-graph-generation",
@@ -266,6 +267,10 @@ class GraphOrchestrator:
         loader = TraceLoader()
         statistics = GraphStatistics()
         consolidator = self._build_consolidator(config["graph"])
+        graph_conf = config["graph"]
+        heuristic = graph_conf["heuristic"]
+        threshold = graph_conf["threshold"]
+        metric = self._merge_registry.create(heuristic)
         graphs_root = run_dir / "artifacts" / "graphs"
         graphs_root.mkdir(parents=True, exist_ok=True)
 
@@ -273,48 +278,36 @@ class GraphOrchestrator:
         built = 0
         for question_id in question_ids:
             _meta, chains = loader.load_question(self._question_dir(traces_root, question_id))
+            if metric.requires_hidden() and not self._has_hidden(chains):
+                raise ValueError(
+                    f"Heuristic '{heuristic}' needs hidden states but none were generated"
+                )
+            graph = consolidator.consolidate(
+                chains=chains,
+                metric=metric,
+                threshold=threshold,
+                pooling_k=graph_conf["pooling_k"],
+                context_window=graph_conf["context_window"],
+            )
+            stats = statistics.compute(graph)
+            if not stats["dag_valid"]:
+                raise ValueError(f"Consolidated graph is not a DAG ({question_id})")
             question_out = graphs_root / f"question_{question_id.replace('/', '-')}"
             question_out.mkdir(parents=True, exist_ok=True)
-            for heuristic in config["graph"]["heuristics"]:
-                metric = self._merge_registry.create(heuristic)
-                if metric.requires_hidden() and not self._has_hidden(chains):
-                    telemetry.emit(
-                        "heuristic_skipped", _COMPONENT, "consolidation",
-                        message=f"{heuristic} needs hidden states; none present",
-                        payload={"question_id": question_id, "heuristic": heuristic},
-                    )
-                    continue
-                for threshold in config["graph"]["thresholds"]:
-                    graph = consolidator.consolidate(
-                        chains=chains,
-                        metric=metric,
-                        threshold=threshold,
-                        pooling_k=config["graph"]["pooling_k"],
-                    )
-                    stats = statistics.compute(graph)
-                    if not stats["dag_valid"]:
-                        raise ValueError(
-                            f"Consolidated graph is not a DAG ({question_id}, {heuristic}, {threshold})"
-                        )
-                    name = f"graph_{heuristic}_{threshold}"
-                    (question_out / f"{name}.json").write_text(
-                        json.dumps({"graph": graph.to_dict(), "stats": stats}, indent=2),
-                        encoding="utf-8",
-                    )
-                    built += 1
-                    telemetry.emit(
-                        "graph_built", _COMPONENT, "consolidation",
-                        metrics={
-                            "node_reduction": stats["node_reduction"],
-                            "merges": stats["merge_events"],
-                            "join_nodes": stats["join_nodes"],
-                        },
-                        payload={
-                            "question_id": question_id,
-                            "heuristic": heuristic,
-                            "threshold": threshold,
-                        },
-                    )
+            (question_out / f"graph_{heuristic}_{threshold}.json").write_text(
+                json.dumps({"graph": graph.to_dict(), "stats": stats}, indent=2),
+                encoding="utf-8",
+            )
+            built += 1
+            telemetry.emit(
+                "graph_built", _COMPONENT, "consolidation",
+                metrics={
+                    "node_reduction": stats["node_reduction"],
+                    "merges": stats["merge_events"],
+                    "join_nodes": stats["join_nodes"],
+                },
+                payload={"question_id": question_id, "heuristic": heuristic, "threshold": threshold},
+            )
         telemetry.emit("phase_end", _COMPONENT, "consolidation", metrics={"graphs_built": built})
         telemetry.component("summary").update("graphs_built", built)
         return {"graphs_built": built}
@@ -337,8 +330,9 @@ class GraphOrchestrator:
         reports_root = run_dir / "artifacts" / "reports"
         reports_root.mkdir(parents=True, exist_ok=True)
 
-        heuristic = config["report"]["heuristic"]
-        threshold = config["report"]["threshold"]
+        graph_conf = config["graph"]
+        heuristic = graph_conf["heuristic"]
+        threshold = graph_conf["threshold"]
         metric = self._merge_registry.create(heuristic)
         rng = random.Random(seed)
         sample_count = min(config["report"]["sample_questions"], len(question_ids))
@@ -350,7 +344,7 @@ class GraphOrchestrator:
             meta, chains = loader.load_question(self._question_dir(traces_root, question_id))
             graph = consolidator.consolidate(
                 chains=chains, metric=metric, threshold=threshold,
-                pooling_k=config["graph"]["pooling_k"],
+                pooling_k=graph_conf["pooling_k"], context_window=graph_conf["context_window"],
             )
             stats = statistics.compute(graph)
             html = report.render(
@@ -371,7 +365,7 @@ class GraphOrchestrator:
 
     def _build_dataset(self, dataset_config: dict[str, Any]):
         return self._dataset_registry.create(
-            dataset_config["provider_class"],
+            dataset_config["provider"],
             dataset_id=dataset_config["dataset_id"],
             dataset_revision=dataset_config["dataset_revision"],
             dataset_config=dataset_config["dataset_config"],
@@ -380,7 +374,7 @@ class GraphOrchestrator:
 
     def _build_model(self, model_config: dict[str, Any]):
         return self._model_registry.create(
-            model_config["provider_class"],
+            model_config["provider"],
             model_id=model_config["model_id"],
             model_revision=model_config["model_revision"],
             dtype=model_config["dtype"],
@@ -393,7 +387,9 @@ class GraphOrchestrator:
             depth_policy=graph_config["depth_policy"],
             max_depth_difference=graph_config["max_depth_difference"],
         )
-        selector = RepresentativeSelector(window=graph_config["confidence_window"])
+        selector = self._representative_registry.create(
+            graph_config["representative_policy"], window=graph_config["confidence_window"]
+        )
         return GraphConsolidator(
             candidate_filter=candidate_filter, representative_selector=selector
         )

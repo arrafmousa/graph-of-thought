@@ -63,5 +63,5 @@ def test_graph_run_records_provider_classes(tmp_path):
         command="test",
     )
     manifest = json.loads((run_dir / "run_manifest.json").read_text(encoding="utf-8"))
-    assert manifest["model"]["provider_class"] == "SyntheticModelProvider"
-    assert manifest["model"]["dataset_provider_class"] == "SyntheticDataset"
+    assert manifest["model"]["provider"] == "synthetic"
+    assert manifest["model"]["dataset_provider"] == "synthetic"

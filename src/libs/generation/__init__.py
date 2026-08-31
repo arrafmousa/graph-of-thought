@@ -9,6 +9,7 @@ and written to disk by :class:`TraceStore` so they never accumulate on the GPU.
 from .chain_trace import ChainTrace
 from .huggingface_model_provider import HuggingFaceModelProvider
 from .model_provider import ModelProvider
+from .model_provider_kind import ModelProviderKind
 from .model_provider_registry import ModelProviderRegistry
 from .synthetic_model_provider import SyntheticModelProvider
 from .token_node import TokenNode
@@ -18,6 +19,7 @@ __all__ = [
     "ChainTrace",
     "HuggingFaceModelProvider",
     "ModelProvider",
+    "ModelProviderKind",
     "ModelProviderRegistry",
     "SyntheticModelProvider",
     "TokenNode",

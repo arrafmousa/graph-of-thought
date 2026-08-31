@@ -6,6 +6,7 @@ import json
 import pytest
 
 from libs.generation import (
+    ModelProviderKind,
     ModelProviderRegistry,
     SyntheticModelProvider,
     TraceStore,
@@ -88,3 +89,9 @@ def test_trace_store_writes_expected_artifacts(tmp_path):
 def test_registry_rejects_unknown_provider():
     with pytest.raises(KeyError):
         ModelProviderRegistry.with_builtin_providers().create("Missing")
+
+
+def test_provider_kinds_are_discoverable():
+    registry = ModelProviderRegistry.with_builtin_providers()
+    assert set(registry.available()) == set(ModelProviderKind)
+    assert {k.value for k in ModelProviderKind} == {"huggingface", "synthetic"}

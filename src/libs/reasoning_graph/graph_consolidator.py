@@ -38,6 +38,7 @@ class GraphConsolidator:
         metric: MergeMetric,
         threshold: float,
         pooling_k: int,
+        context_window: int,
     ) -> ReasoningGraph:
         graph = ReasoningGraph(heuristic=metric.name, threshold=threshold)
         chain_map = {chain.chain_id: chain for chain in chains}
@@ -95,6 +96,8 @@ class GraphConsolidator:
                         "token_b": token.text,
                         "depth_a": rep.token_index,
                         "depth_b": idx,
+                        "context_a": self._context(chain_map[rep.chain_id], rep.token_index, context_window),
+                        "context_b": self._context(chain_map[chain_id], idx, context_window),
                     }
                 )
             if assigned is None:
@@ -144,6 +147,11 @@ class GraphConsolidator:
                 if result is not None:
                     pooled[token.key] = result
         return pooled
+
+    @staticmethod
+    def _context(chain, upto_index: int, context_window: int) -> str:
+        start = max(0, upto_index - context_window + 1)
+        return " ".join(token.text for token in chain.tokens[start : upto_index + 1])
 
     @staticmethod
     def _reaches(adjacency: dict[int, set[int]], start: int, target: int) -> bool:

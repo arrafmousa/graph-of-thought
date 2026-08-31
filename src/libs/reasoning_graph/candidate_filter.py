@@ -7,17 +7,19 @@ separately by the consolidator's DAG guard.
 """
 from __future__ import annotations
 
+from typing import Union
+
+from .depth_policy import DepthPolicy
 from .loaded_token import LoadedToken
 
 
 class CandidateFilter:
     """Admissibility rules for candidate merges."""
 
-    def __init__(self, *, depth_policy: str, max_depth_difference: int) -> None:
-        allowed = {"same_depth", "absolute_window", "unrestricted"}
-        if depth_policy not in allowed:
-            raise ValueError(f"Unknown depth_policy '{depth_policy}'. Allowed: {sorted(allowed)}")
-        self._depth_policy = depth_policy
+    def __init__(self, *, depth_policy: Union[DepthPolicy, str], max_depth_difference: int) -> None:
+        self._depth_policy = (
+            depth_policy if isinstance(depth_policy, DepthPolicy) else DepthPolicy(depth_policy)
+        )
         self._max_depth_difference = max_depth_difference
 
     def admissible(
@@ -30,8 +32,8 @@ class CandidateFilter:
         return self._depth_ok(token.token_index, rep.token_index)
 
     def _depth_ok(self, token_depth: int, rep_depth: int) -> bool:
-        if self._depth_policy == "unrestricted":
+        if self._depth_policy is DepthPolicy.UNRESTRICTED:
             return True
-        if self._depth_policy == "same_depth":
+        if self._depth_policy is DepthPolicy.SAME_DEPTH:
             return token_depth == rep_depth
         return abs(token_depth - rep_depth) <= self._max_depth_difference

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "type": "object",
-  "required": ["schema_version", "run", "randomness", "dataset", "model", "generation", "graph", "report"],
+  "required": ["schema_version", "run", "randomness", "dataset", "model", "generation", "tuning"],
   "properties": {
     "schema_version": { "type": "string" },
     "run": {
@@ -24,9 +24,7 @@
         "seeds": {
           "type": "object",
           "required": ["python"],
-          "properties": {
-            "python": { "type": "integer" }
-          }
+          "properties": { "python": { "type": "integer" } }
         }
       }
     },
@@ -74,13 +72,7 @@
     },
     "generation": {
       "type": "object",
-      "required": [
-        "num_chains",
-        "max_new_tokens",
-        "temperature",
-        "top_p",
-        "batch_size"
-      ],
+      "required": ["num_chains", "max_new_tokens", "temperature", "top_p", "batch_size"],
       "properties": {
         "num_chains": { "type": "integer", "minimum": 1 },
         "max_new_tokens": { "type": "integer", "minimum": 1 },
@@ -89,24 +81,30 @@
         "batch_size": { "type": "integer", "minimum": 1 }
       }
     },
-    "graph": {
+    "tuning": {
       "type": "object",
       "required": [
-        "heuristic",
-        "threshold",
+        "heuristics",
+        "thresholds",
         "pooling_k",
         "depth_policy",
         "max_depth_difference",
         "confidence_window",
         "representative_policy",
-        "context_window"
+        "context_window",
+        "high_sample_count",
+        "edge_sample_count",
+        "edge_margin"
       ],
       "properties": {
-        "heuristic": {
-          "type": "string",
-          "enum": ["token_identity", "hidden_cosine", "pooled_hidden_cosine"]
+        "heuristics": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["token_identity", "hidden_cosine", "pooled_hidden_cosine"]
+          }
         },
-        "threshold": { "type": "number" },
+        "thresholds": { "type": "array", "items": { "type": "number" } },
         "pooling_k": { "type": "integer", "minimum": 1 },
         "depth_policy": {
           "type": "string",
@@ -118,14 +116,10 @@
           "type": "string",
           "enum": ["recent_mean_logprob"]
         },
-        "context_window": { "type": "integer", "minimum": 1 }
-      }
-    },
-    "report": {
-      "type": "object",
-      "required": ["sample_questions"],
-      "properties": {
-        "sample_questions": { "type": "integer", "minimum": 1 }
+        "context_window": { "type": "integer", "minimum": 1 },
+        "high_sample_count": { "type": "integer", "minimum": 1 },
+        "edge_sample_count": { "type": "integer", "minimum": 1 },
+        "edge_margin": { "type": "number", "minimum": 0 }
       }
     }
   }
