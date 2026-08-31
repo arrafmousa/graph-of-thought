@@ -53,6 +53,7 @@ class GraphConsolidator:
         graph.add_node(GraphNode(cluster_id=ROOT_ID, depth=-1, members=[], texts=["<root>"]))
 
         clusters: dict[int, dict[str, Any]] = {}
+        clusters_by_depth: dict[int, list[int]] = {}
         node_cluster: dict[tuple[int, int], int] = {}
         adjacency: dict[int, set[int]] = {ROOT_ID: set()}
         next_id = 0
@@ -64,12 +65,19 @@ class GraphConsolidator:
 
             best_cid = None
             best_score = None
-            for cid, cluster in clusters.items():
+            for cid in self._candidate_ids(clusters_by_depth, idx):
+                cluster = clusters[cid]
                 rep = token_map[cluster["rep_key"]]
                 if not self._filter.admissible(token, rep, cluster["chains"]):
                     continue
                 score = metric.score(token, rep, context)
-                if score >= threshold and (best_score is None or score > best_score):
+                if score < threshold:
+                    continue
+                if (
+                    best_score is None
+                    or score > best_score
+                    or (score == best_score and cid < best_cid)
+                ):
                     best_score = score
                     best_cid = cid
 
@@ -104,6 +112,7 @@ class GraphConsolidator:
                 assigned = next_id
                 next_id += 1
                 clusters[assigned] = {"members": [key], "chains": {chain_id}, "rep_key": key}
+                clusters_by_depth.setdefault(idx, []).append(assigned)
                 adjacency[assigned] = set()
 
             node_cluster[key] = assigned
@@ -135,6 +144,17 @@ class GraphConsolidator:
                     terminal=terminal,
                 )
             )
+
+    def _candidate_ids(self, clusters_by_depth: dict[int, list[int]], token_depth: int):
+        """Cluster ids worth scanning for a node, indexed by representative depth."""
+        depth_range = self._filter.candidate_depth_range(token_depth)
+        if depth_range is None:
+            for bucket in clusters_by_depth.values():
+                yield from bucket
+            return
+        low, high = depth_range
+        for depth in range(low, high + 1):
+            yield from clusters_by_depth.get(depth, ())
 
     @staticmethod
     def _pooled(chains, pooling_k) -> dict[tuple[int, int], list[float]]:
