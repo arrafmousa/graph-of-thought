@@ -99,14 +99,13 @@
     },
     "judge": {
       "type": "object",
-      "required": ["provider", "endpoint", "api_path", "deployment", "api_key_environment_variable", "request_url", "batch_endpoint", "completion_window", "system_instruction", "pair_prompt_template", "max_completion_tokens", "max_score", "parse_attempts", "poll_interval_seconds", "max_wait_seconds", "submission_attempts", "submission_retry_seconds"],
+      "required": ["provider", "endpoint", "api_version", "deployment", "api_key_environment_variable", "batch_endpoint", "completion_window", "system_instruction", "pair_prompt_template", "max_completion_tokens", "max_score", "parse_attempts", "poll_interval_seconds", "max_wait_seconds", "submission_attempts", "submission_retry_seconds"],
       "properties": {
         "provider": {"type": "string", "enum": ["azure_openai_batch", "synthetic"]},
         "endpoint": {"type": "string"},
-        "api_path": {"type": "string"},
+        "api_version": {"type": "string"},
         "deployment": {"type": "string"},
         "api_key_environment_variable": {"type": "string"},
-        "request_url": {"type": "string"},
         "batch_endpoint": {"type": "string"},
         "completion_window": {"type": "string", "enum": ["24h"]},
         "system_instruction": {"type": "string"},

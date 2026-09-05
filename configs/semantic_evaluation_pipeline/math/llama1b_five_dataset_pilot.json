@@ -133,10 +133,9 @@
   "judge": {
     "provider": "azure_openai_batch",
     "endpoint": "https://arraf-mja7vwko-eastus2.cognitiveservices.azure.com/",
-    "api_path": "openai/v1",
+    "api_version": "2024-12-01-preview",
     "deployment": "gpt-5.1",
     "api_key_environment_variable": "AZURE_OPENAI_API_KEY",
-    "request_url": "/v1/chat/completions",
     "batch_endpoint": "/chat/completions",
     "completion_window": "24h",
     "system_instruction": "You are a strict mathematical reasoning evaluator. Judge only whether two partial reasoning paths have inferred the same information at their endpoints. Do not use their unseen final answers. Equivalent means either path can replace the other without losing a fact, constraint, intermediate value, case distinction, or unresolved uncertainty needed for correct continuation. Return only the required JSON object.",

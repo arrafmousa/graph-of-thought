@@ -93,13 +93,12 @@ def test_azure_batch_provider_uploads_once_and_restores_request_order(
         batches=SimpleNamespace(create=create_batch),
     )
     monkeypatch.setenv("AZURE_OPENAI_API_KEY", "test-only")
-    monkeypatch.setitem(sys.modules, "openai", SimpleNamespace(OpenAI=lambda **kwargs: client))
+    monkeypatch.setitem(sys.modules, "openai", SimpleNamespace(AzureOpenAI=lambda **kwargs: client))
     provider = AzureOpenAIBatchJudgeProvider(
         endpoint="https://example.cognitiveservices.azure.com/",
-        api_path="openai/v1",
+        api_version="2024-12-01-preview",
         deployment="gpt-5.1",
         api_key_environment_variable="AZURE_OPENAI_API_KEY",
-        request_url="/v1/chat/completions",
         batch_endpoint="/chat/completions",
         completion_window="24h",
         system_instruction="Return JSON.",
@@ -119,6 +118,6 @@ def test_azure_batch_provider_uploads_once_and_restores_request_order(
     assert captured["batch"] == ("file-input", "/chat/completions", "24h")
     requests = [json.loads(line) for line in captured["input"].splitlines()]
     assert {request["body"]["model"] for request in requests} == {"gpt-5.1"}
-    assert requests[0]["url"] == "/v1/chat/completions"
+    assert requests[0]["url"] == "/chat/completions"
     assert requests[0]["body"]["response_format"]["type"] == "json_schema"
     assert (tmp_path / "batch_000_output.jsonl").is_file()

@@ -61,10 +61,9 @@
   "judge": {
     "provider": "synthetic",
     "endpoint": "synthetic",
-    "api_path": "synthetic",
+    "api_version": "synthetic",
     "deployment": "synthetic-judge",
     "api_key_environment_variable": "AZURE_OPENAI_API_KEY",
-    "request_url": "/chat/completions",
     "batch_endpoint": "/chat/completions",
     "completion_window": "24h",
     "system_instruction": "Judge whether two reasoning prefixes encode the same mathematical state.",

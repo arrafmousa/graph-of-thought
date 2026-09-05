@@ -90,6 +90,33 @@ def test_generate_then_judge_stages_resume_without_regeneration(tmp_path):
     assert len(summary["graphs"]) == judged_manifest["outputs"]["graphs_built"]
 
 
+def test_judge_stage_rebuilds_state_from_saved_graphs_when_missing(tmp_path):
+    orchestrator = SemanticEvaluationOrchestrator(
+        repo_root=tmp_path,
+        schema_path=_REPO / "configs" / "semantic_evaluation_pipeline" / "schema.json",
+        tracked_packages=[],
+    )
+    gen_dir = orchestrator.run(
+        config_path=_demo_config(), entrypoint="test", command="test",
+        stage="generate",
+    )
+    # Simulate an older bundle that only has traces + graphs + pair_requests.
+    evaluation = gen_dir / "artifacts" / "evaluation"
+    (evaluation / "generation_state.json").unlink()
+    (evaluation / "merge_occurrences_raw.jsonl").unlink()
+    (evaluation / "pair_requests.jsonl").unlink()
+
+    judged_dir = orchestrator.run(
+        config_path=_demo_config(), entrypoint="test", command="test",
+        stage="judge", resume_run_dir=gen_dir,
+    )
+    manifest = json.loads((judged_dir / "run_manifest.json").read_text(encoding="utf-8"))
+    ManifestValidator().validate(manifest)
+    assert manifest["status"] == "completed"
+    assert manifest["outputs"]["unique_pairs_judged"] > 0
+    assert (judged_dir / "artifacts" / "reports" / "semantic_evaluation.html").is_file()
+
+
 def test_semantic_evaluation_run_produces_complete_offline_artifacts(tmp_path):
     run_dir = _run(tmp_path)
     manifest = json.loads((run_dir / "run_manifest.json").read_text(encoding="utf-8"))
@@ -210,8 +237,8 @@ def test_production_config_samples_twenty_questions_from_five_pinned_datasets():
     assert all(len(item["dataset_revision"]) == 40 for item in datasets)
     assert config["judge"]["provider"] == "azure_openai_batch"
     assert config["judge"]["deployment"] == "gpt-5.1"
-    assert config["judge"]["api_path"] == "openai/v1"
-    assert config["judge"]["request_url"] == "/v1/chat/completions"
+    assert config["judge"]["api_version"] == "2024-12-01-preview"
+    assert config["judge"]["batch_endpoint"] == "/chat/completions"
 
 
 def test_pilot_config_samples_five_questions_from_five_pinned_datasets():

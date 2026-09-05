@@ -19,10 +19,9 @@ class AzureOpenAIBatchJudgeProvider(JudgeProvider):
         self,
         *,
         endpoint: str,
-        api_path: str,
+        api_version: str,
         deployment: str,
         api_key_environment_variable: str,
-        request_url: str,
         batch_endpoint: str,
         completion_window: str,
         system_instruction: str,
@@ -35,10 +34,9 @@ class AzureOpenAIBatchJudgeProvider(JudgeProvider):
         artifact_dir: Path,
     ) -> None:
         self._endpoint = endpoint
-        self._api_path = api_path
+        self._api_version = api_version
         self._deployment = deployment
         self._api_key_environment_variable = api_key_environment_variable
-        self._request_url = request_url
         self._batch_endpoint = batch_endpoint
         self._completion_window = completion_window
         self._system_instruction = system_instruction
@@ -82,16 +80,16 @@ class AzureOpenAIBatchJudgeProvider(JudgeProvider):
         return None
 
     def _client(self):
-        from openai import OpenAI
+        from openai import AzureOpenAI
 
         api_key = os.environ.get(self._api_key_environment_variable)
         if not api_key:
             raise RuntimeError(
                 f"Required environment variable '{self._api_key_environment_variable}' is not set"
             )
-        base_url = f"{self._endpoint.rstrip('/')}/{self._api_path.strip('/')}/"
-        return OpenAI(
-            base_url=base_url,
+        return AzureOpenAI(
+            azure_endpoint=self._endpoint,
+            api_version=self._api_version,
             api_key=api_key,
         )
 
@@ -102,7 +100,7 @@ class AzureOpenAIBatchJudgeProvider(JudgeProvider):
                 request = {
                     "custom_id": f"request-{index:08d}",
                     "method": "POST",
-                    "url": self._request_url,
+                    "url": self._batch_endpoint,
                     "body": {
                         "model": self._deployment,
                         "messages": [

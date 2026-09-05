@@ -124,7 +124,7 @@ class SemanticEvaluationOrchestrator:
         telemetry.emit("run_start", _COMPONENT, "run", message=f"resume judging {run_id}")
         logger.info("semantic evaluation run %s resumed (stage=judge)", run_id)
         try:
-            state = self._load_generation_state(run_dir)
+            state = self._load_generation_state(config, run_dir)
             outputs = self._execute_judge(config, run_dir, telemetry, logger, state)
             duration = time.monotonic() - started
             manifest.mark_completed(outputs, duration)
@@ -207,22 +207,70 @@ class SemanticEvaluationOrchestrator:
             "skipped": skipped_first_token_merges,
         }
 
-    def _load_generation_state(self, run_dir) -> dict[str, Any]:
+    def _load_generation_state(self, config, run_dir) -> dict[str, Any]:
         evaluation_root = run_dir / "artifacts" / "evaluation"
-        requests = self._read_jsonl(evaluation_root / "pair_requests.jsonl")
-        occurrences = self._read_jsonl(evaluation_root / "merge_occurrences_raw.jsonl")
+        state_path = evaluation_root / "generation_state.json"
+        raw_path = evaluation_root / "merge_occurrences_raw.jsonl"
         graphs = json.loads(
             (run_dir / "artifacts" / "graphs" / "index.json").read_text(encoding="utf-8")
         )["graphs"]
-        state = json.loads(
-            (evaluation_root / "generation_state.json").read_text(encoding="utf-8")
-        )
+        if state_path.is_file() and raw_path.is_file():
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            return {
+                "questions": state["questions"],
+                "graphs": graphs,
+                "occurrences": self._read_jsonl(raw_path),
+                "requests": self._read_jsonl(evaluation_root / "pair_requests.jsonl"),
+                "skipped": state["skipped_first_token_merges"],
+            }
+        # Older runs (pre stage-split) did not persist judge state; rebuild it
+        # from the saved graphs + traces so judging can resume without regenerating.
+        return self._rebuild_state_from_disk(config, run_dir, graphs)
+
+    def _rebuild_state_from_disk(self, config, run_dir, graphs) -> dict[str, Any]:
+        providers = {
+            dataset["name"]: self._build_dataset(dataset)
+            for dataset in config["datasets"]
+        }
+        min_join = config["tuning"]["min_join_token_index"]
+        loader = TraceLoader()
+        trace_cache: dict[str, Any] = {}
+        occurrences: list[dict[str, Any]] = []
+        requests: dict[str, dict[str, Any]] = {}
+        skipped = 0
+        for row in graphs:
+            payload = json.loads(
+                (run_dir / row["graph_path"]).read_text(encoding="utf-8")
+            )
+            entry = payload["question"]
+            trace_dir = row["trace_dir"]
+            if trace_dir not in trace_cache:
+                trace_cache[trace_dir] = loader.load_question(run_dir / trace_dir)
+            _meta, chains = trace_cache[trace_dir]
+            chain_map = {chain.chain_id: chain for chain in chains}
+            item = {
+                "dataset": row["dataset"],
+                "question_id": row["question_id"],
+                "trace_dir": trace_dir,
+            }
+            provider = providers[row["dataset"]]
+            for merge in payload["graph"]["merges"]:
+                if merge["node_a"][1] < min_join or merge["node_b"][1] < min_join:
+                    skipped += 1
+                    continue
+                occurrence, request = self._merge_records(
+                    item, entry, row["graph_id"], row["heuristic"], row["threshold"],
+                    merge, chain_map, provider,
+                )
+                occurrences.append(occurrence)
+                requests.setdefault(request["pair_id"], request)
+        questions = len({(row["dataset"], row["question_id"]) for row in graphs})
         return {
-            "questions": state["questions"],
+            "questions": questions,
             "graphs": graphs,
             "occurrences": occurrences,
-            "requests": requests,
-            "skipped": state["skipped_first_token_merges"],
+            "requests": list(requests.values()),
+            "skipped": skipped,
         }
 
     def _execute_judge(self, config, run_dir, telemetry, logger, state) -> dict[str, Any]:
@@ -725,12 +773,11 @@ class SemanticEvaluationOrchestrator:
             provider = self._judge_registry.create(
                 judge_config["provider"],
                 endpoint=judge_config["endpoint"],
-                api_path=judge_config["api_path"],
+                api_version=judge_config["api_version"],
                 deployment=judge_config["deployment"],
                 api_key_environment_variable=judge_config[
                     "api_key_environment_variable"
                 ],
-                request_url=judge_config["request_url"],
                 batch_endpoint=judge_config["batch_endpoint"],
                 completion_window=judge_config["completion_window"],
                 system_instruction=judge_config["system_instruction"],
@@ -783,7 +830,7 @@ class SemanticEvaluationOrchestrator:
                 "judge": {
                     "provider": config["judge"]["provider"],
                     "deployment": config["judge"]["deployment"],
-                    "api_path": config["judge"]["api_path"],
+                    "api_version": config["judge"]["api_version"],
                 },
                 "datasets": [item["dataset_id"] for item in config["datasets"]],
                 "task": "reasoning-graph-semantic-evaluation",
