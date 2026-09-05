@@ -42,6 +42,14 @@ class HuggingFaceModelProvider(ModelProvider):
     def provides_hidden_states(self) -> bool:
         return True
 
+    def release(self) -> None:
+        self._model = None
+        self._tokenizer = None
+        if self._device.startswith("cuda"):
+            import torch
+
+            torch.cuda.empty_cache()
+
     def generate(
         self,
         *,

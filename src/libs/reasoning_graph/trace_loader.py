@@ -56,6 +56,7 @@ class TraceLoader:
                 terminated_reason=record.get("terminated_reason", "max_tokens"),
                 predicted=record.get("predicted"),
                 correct=record.get("correct"),
+                answer_evaluation=record.get("answer_evaluation", {}),
             )
             for token in record.get("tokens", []):
                 index = int(token["token_index"])

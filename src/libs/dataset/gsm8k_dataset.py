@@ -1,6 +1,7 @@
 """GSM8K provider: short-answer grade-school math (openai/gsm8k)."""
 from __future__ import annotations
 
+import random
 from typing import Optional
 
 from . import number_utils
@@ -28,7 +29,9 @@ class Gsm8kDataset(DatasetProvider):
         self._dataset_config = dataset_config
         self._answer_delimiter = answer_delimiter
 
-    def load(self, *, split: str, num_questions: int) -> list[DatasetEntry]:
+    def load(
+        self, *, split: str, num_questions: int, sample_seed: int
+    ) -> list[DatasetEntry]:
         from datasets import load_dataset  # lazy: heavy dependency (AGENTS.md section 31)
 
         dataset = load_dataset(
@@ -38,7 +41,9 @@ class Gsm8kDataset(DatasetProvider):
             revision=self._dataset_revision,
         )
         entries: list[DatasetEntry] = []
-        for index in range(min(num_questions, len(dataset))):
+        sample_size = min(num_questions, len(dataset))
+        indices = random.Random(sample_seed).sample(range(len(dataset)), sample_size)
+        for index in indices:
             record = dataset[index]
             question = str(record["question"])
             reference = str(record["answer"])
@@ -50,21 +55,39 @@ class Gsm8kDataset(DatasetProvider):
                     question=question,
                     gold_answer=gold,
                     options=[],
-                    metadata={"reference_solution": reference},
+                    metadata={"reference_solution": reference, "source_index": index},
                 )
             )
         return entries
 
     def parse_prediction(self, entry: DatasetEntry, completion: str) -> Optional[str]:
-        delimiter = self._answer_delimiter
-        tail = completion.rsplit(delimiter, 1)[-1] if delimiter in completion else completion
-        return number_utils.last_number(tail)
+        region = number_utils.extract_delimited(completion, self._answer_delimiter)
+        return number_utils.last_number(region if region is not None else completion)
 
     def is_correct(self, entry: DatasetEntry, predicted: Optional[str]) -> bool:
         if predicted is None:
             return False
         gold = number_utils.last_number(entry.gold_answer)
         return gold is not None and predicted == gold
+
+    def answers_equivalent(
+        self, first: Optional[str], second: Optional[str]
+    ) -> Optional[bool]:
+        if first is None or second is None:
+            return None
+        return number_utils.last_number(first) == number_utils.last_number(second)
+
+    def evaluate_completion(self, entry: DatasetEntry, completion: str) -> dict:
+        predicted = self.parse_prediction(entry, completion)
+        return {
+            "format_valid": number_utils.has_delimited_pair(
+                completion, self._answer_delimiter
+            ),
+            "parse_valid": predicted is not None,
+            "parser": "number",
+            "predicted": predicted,
+            "correct": self.is_correct(entry, predicted),
+        }
 
     def _extract_gold(self, reference: str) -> str:
         if self._answer_delimiter in reference:

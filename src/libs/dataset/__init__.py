@@ -7,18 +7,22 @@ synthetic source) and yields :class:`DatasetEntry` values. Each entry knows how
 to format its own prompt and carries the gold answer; the provider knows how to
 parse a model completion back into a predicted answer and judge correctness.
 """
+from .answer_mode import AnswerMode
 from .dataset_entry import DatasetEntry
 from .dataset_provider import DatasetProvider
 from .dataset_provider_kind import DatasetProviderKind
 from .dataset_registry import DatasetRegistry
 from .gsm8k_dataset import Gsm8kDataset
+from .huggingface_math_dataset import HuggingFaceMathDataset
 from .synthetic_dataset import SyntheticDataset
 
 __all__ = [
+    "AnswerMode",
     "DatasetEntry",
     "DatasetProvider",
     "DatasetProviderKind",
     "DatasetRegistry",
     "Gsm8kDataset",
+    "HuggingFaceMathDataset",
     "SyntheticDataset",
 ]

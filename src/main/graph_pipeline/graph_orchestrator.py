@@ -161,6 +161,7 @@ class GraphOrchestrator:
         entries = provider.load(
             split=config["dataset"]["split"],
             num_questions=config["dataset"]["num_questions"],
+            sample_seed=seed,
         )
         telemetry.component("summary").update("questions", len(entries))
         telemetry.emit("phase_start", _COMPONENT, "generation", metrics={"questions": len(entries)})

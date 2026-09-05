@@ -22,6 +22,7 @@ class ChainTrace:
     terminated_reason: str = "max_tokens"
     predicted: Optional[str] = None
     correct: Optional[bool] = None
+    answer_evaluation: dict[str, Any] = field(default_factory=dict)
 
     def recent_mean_logprob(self, window: int) -> float:
         """Mean sampled-token log-probability over the last ``window`` tokens."""
@@ -37,6 +38,7 @@ class ChainTrace:
             "terminated_reason": self.terminated_reason,
             "predicted": self.predicted,
             "correct": self.correct,
+            "answer_evaluation": dict(self.answer_evaluation),
             "num_tokens": len(self.tokens),
             "tokens": [t.to_metadata() for t in self.tokens],
         }

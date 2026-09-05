@@ -32,3 +32,7 @@ class ModelProvider(ABC):
     @abstractmethod
     def provides_hidden_states(self) -> bool:
         """Whether generated tokens carry hidden-state vectors."""
+
+    @abstractmethod
+    def release(self) -> None:
+        """Release model resources after generation is complete."""

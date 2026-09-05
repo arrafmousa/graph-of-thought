@@ -5,3 +5,6 @@ transformers>=4.40
 datasets>=2.19
 accelerate>=0.30
 numpy
+openai>=1.55
+python-dotenv>=1.0
+math-verify[antlr4_13_2]>=0.9,<1

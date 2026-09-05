@@ -1,0 +1,141 @@
+{
+  "schema_version": "1.0.0",
+  "type": "object",
+  "required": ["schema_version", "run", "experiment", "randomness", "datasets", "model", "generation", "tuning", "judge", "quality", "report"],
+  "properties": {
+    "schema_version": {"type": "string"},
+    "run": {
+      "type": "object",
+      "required": ["task_name", "dashboard_template", "dashboard_refresh_seconds", "terminal_progress"],
+      "properties": {
+        "task_name": {"type": "string"},
+        "dashboard_template": {"type": "string", "enum": ["generic", "training", "inference", "evaluation"]},
+        "dashboard_refresh_seconds": {"type": "integer", "minimum": 0},
+        "terminal_progress": {"type": "boolean"}
+      }
+    },
+    "experiment": {
+      "type": "object",
+      "required": ["minimum_datasets", "minimum_questions_per_dataset"],
+      "properties": {
+        "minimum_datasets": {"type": "integer", "minimum": 1},
+        "minimum_questions_per_dataset": {"type": "integer", "minimum": 1}
+      }
+    },
+    "randomness": {
+      "type": "object",
+      "required": ["seeds"],
+      "properties": {
+        "seeds": {
+          "type": "object",
+          "required": ["generation"],
+          "properties": {"generation": {"type": "integer"}}
+        }
+      }
+    },
+    "datasets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "provider", "dataset_id", "dataset_revision", "dataset_configs", "split", "num_questions", "sample_seed", "question_fields", "answer_field", "id_field", "metadata_fields", "answer_mode", "answer_delimiter", "require_answer_delimiter", "math_parser_timeout_seconds"],
+        "properties": {
+          "name": {"type": "string"},
+          "provider": {"type": "string", "enum": ["huggingface_math", "synthetic"]},
+          "dataset_id": {"type": "string"},
+          "dataset_revision": {"type": "string"},
+          "dataset_configs": {"type": "array", "items": {"type": "string"}},
+          "split": {"type": "string"},
+          "num_questions": {"type": "integer", "minimum": 1},
+          "sample_seed": {"type": "integer"},
+          "question_fields": {"type": "array", "items": {"type": "string"}},
+          "answer_field": {"type": "string"},
+          "id_field": {"type": "string"},
+          "metadata_fields": {"type": "array", "items": {"type": "string"}},
+          "answer_mode": {"type": "string", "enum": ["number", "number_or_text", "math_text"]},
+          "answer_delimiter": {"type": "string"},
+          "require_answer_delimiter": {"type": "boolean"},
+          "math_parser_timeout_seconds": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "required": ["provider", "model_id", "model_revision", "dtype", "device", "hidden_layer", "system_instruction"],
+      "properties": {
+        "provider": {"type": "string", "enum": ["huggingface", "synthetic"]},
+        "model_id": {"type": "string"},
+        "model_revision": {"type": "string"},
+        "dtype": {"type": "string"},
+        "device": {"type": "string"},
+        "hidden_layer": {"type": "integer"},
+        "system_instruction": {"type": "string"}
+      }
+    },
+    "generation": {
+      "type": "object",
+      "required": ["num_chains", "max_new_tokens", "temperature", "top_p", "batch_size"],
+      "properties": {
+        "num_chains": {"type": "integer", "minimum": 1},
+        "max_new_tokens": {"type": "integer", "minimum": 1},
+        "temperature": {"type": "number", "minimum": 0},
+        "top_p": {"type": "number", "minimum": 0},
+        "batch_size": {"type": "integer", "minimum": 1}
+      }
+    },
+    "tuning": {
+      "type": "object",
+      "required": ["heuristics", "thresholds", "pooling_k", "depth_policy", "max_depth_difference", "confidence_window", "representative_policy", "context_window"],
+      "properties": {
+        "heuristics": {"type": "array", "items": {"type": "string", "enum": ["token_identity", "hidden_cosine", "pooled_hidden_cosine"]}},
+        "thresholds": {"type": "array", "items": {"type": "number"}},
+        "pooling_k": {"type": "integer", "minimum": 1},
+        "depth_policy": {"type": "string", "enum": ["same_depth", "absolute_window", "unrestricted"]},
+        "max_depth_difference": {"type": "integer", "minimum": 0},
+        "confidence_window": {"type": "integer", "minimum": 1},
+        "representative_policy": {"type": "string", "enum": ["recent_mean_logprob"]},
+        "context_window": {"type": "integer", "minimum": 1}
+      }
+    },
+    "judge": {
+      "type": "object",
+      "required": ["provider", "endpoint", "api_path", "deployment", "api_key_environment_variable", "request_url", "batch_endpoint", "completion_window", "system_instruction", "pair_prompt_template", "max_completion_tokens", "max_score", "parse_attempts", "poll_interval_seconds", "max_wait_seconds", "submission_attempts", "submission_retry_seconds"],
+      "properties": {
+        "provider": {"type": "string", "enum": ["azure_openai_batch", "synthetic"]},
+        "endpoint": {"type": "string"},
+        "api_path": {"type": "string"},
+        "deployment": {"type": "string"},
+        "api_key_environment_variable": {"type": "string"},
+        "request_url": {"type": "string"},
+        "batch_endpoint": {"type": "string"},
+        "completion_window": {"type": "string", "enum": ["24h"]},
+        "system_instruction": {"type": "string"},
+        "pair_prompt_template": {"type": "string"},
+        "max_completion_tokens": {"type": "integer", "minimum": 1},
+        "max_score": {"type": "integer", "minimum": 1},
+        "parse_attempts": {"type": "integer", "minimum": 1},
+        "poll_interval_seconds": {"type": "integer", "minimum": 1},
+        "max_wait_seconds": {"type": "integer", "minimum": 1},
+        "submission_attempts": {"type": "integer", "minimum": 1},
+        "submission_retry_seconds": {"type": "integer", "minimum": 1}
+      }
+    },
+    "quality": {
+      "type": "object",
+      "required": ["semantic_weight", "continuation_weight", "quality_beta", "missing_answer_agreement_score"],
+      "properties": {
+        "semantic_weight": {"type": "number", "minimum": 0},
+        "continuation_weight": {"type": "number", "minimum": 0},
+        "quality_beta": {"type": "number", "minimum": 0},
+        "missing_answer_agreement_score": {"type": "number", "minimum": 0}
+      }
+    },
+    "report": {
+      "type": "object",
+      "required": ["manual_review_pairs", "graph_reports"],
+      "properties": {
+        "manual_review_pairs": {"type": "integer", "minimum": 1},
+        "graph_reports": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}

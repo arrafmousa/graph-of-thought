@@ -7,7 +7,13 @@ consumes only plain serializable data assembled by the orchestrator, so it stays
 isolated from the generation and reasoning-graph libraries.
 """
 from .graph_html_report import GraphHtmlReport
+from .semantic_evaluation_report import SemanticEvaluationReport
 from .tuning_comparison_report import TuningComparisonReport
 from .tuning_config_report import TuningConfigReport
 
-__all__ = ["GraphHtmlReport", "TuningComparisonReport", "TuningConfigReport"]
+__all__ = [
+	"GraphHtmlReport",
+	"SemanticEvaluationReport",
+	"TuningComparisonReport",
+	"TuningConfigReport",
+]

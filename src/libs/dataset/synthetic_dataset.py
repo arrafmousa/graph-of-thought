@@ -30,8 +30,12 @@ class SyntheticDataset(DatasetProvider):
         self._dataset_config = dataset_config
         self._answer_delimiter = answer_delimiter
 
-    def load(self, *, split: str, num_questions: int) -> list[DatasetEntry]:
-        rng = random.Random(f"{self._dataset_id}:{self._dataset_revision}:{split}")
+    def load(
+        self, *, split: str, num_questions: int, sample_seed: int
+    ) -> list[DatasetEntry]:
+        rng = random.Random(
+            f"{self._dataset_id}:{self._dataset_revision}:{split}:{sample_seed}"
+        )
         entries: list[DatasetEntry] = []
         for index in range(num_questions):
             a = rng.randint(2, 40)
@@ -51,12 +55,30 @@ class SyntheticDataset(DatasetProvider):
         return entries
 
     def parse_prediction(self, entry: DatasetEntry, completion: str) -> Optional[str]:
-        delimiter = self._answer_delimiter
-        tail = completion.rsplit(delimiter, 1)[-1] if delimiter in completion else completion
-        return number_utils.last_number(tail)
+        region = number_utils.extract_delimited(completion, self._answer_delimiter)
+        return number_utils.last_number(region if region is not None else completion)
 
     def is_correct(self, entry: DatasetEntry, predicted: Optional[str]) -> bool:
         if predicted is None:
             return False
         gold = number_utils.last_number(entry.gold_answer)
         return gold is not None and predicted == gold
+
+    def answers_equivalent(
+        self, first: Optional[str], second: Optional[str]
+    ) -> Optional[bool]:
+        if first is None or second is None:
+            return None
+        return number_utils.last_number(first) == number_utils.last_number(second)
+
+    def evaluate_completion(self, entry: DatasetEntry, completion: str) -> dict:
+        predicted = self.parse_prediction(entry, completion)
+        return {
+            "format_valid": number_utils.has_delimited_pair(
+                completion, self._answer_delimiter
+            ),
+            "parse_valid": predicted is not None,
+            "parser": "number",
+            "predicted": predicted,
+            "correct": self.is_correct(entry, predicted),
+        }

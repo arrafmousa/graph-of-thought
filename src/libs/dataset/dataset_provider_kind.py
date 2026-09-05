@@ -12,4 +12,5 @@ from enum import Enum
 
 class DatasetProviderKind(Enum):
     GSM8K = "gsm8k"
+    HUGGINGFACE_MATH = "huggingface_math"
     SYNTHETIC = "synthetic"

@@ -53,6 +53,9 @@ class SyntheticModelProvider(ModelProvider):
     def provides_hidden_states(self) -> bool:
         return True
 
+    def release(self) -> None:
+        return None
+
     def generate(
         self,
         *,
@@ -79,7 +82,7 @@ class SyntheticModelProvider(ModelProvider):
         answer = gold if correct else gold + rng.choice([-3, -2, -1, 1, 2, 3])
         trace = ChainTrace(chain_id=chain_id, terminated_reason="eos")
         index = 0
-        body_len = max(1, max_new_tokens - 2)
+        body_len = max(1, max_new_tokens - 3)
         for concept in shared:
             if index >= body_len:
                 break
@@ -93,6 +96,7 @@ class SyntheticModelProvider(ModelProvider):
                 break
         trace.tokens.append(self._answer_token(index, "####", 900, rng, correct))
         trace.tokens.append(self._answer_token(index + 1, str(answer), 901, rng, correct))
+        trace.tokens.append(self._answer_token(index + 2, "####", 902, rng, correct))
         trace.completion_text = self._detokenize(trace.tokens)
         return trace
 
@@ -131,10 +135,4 @@ class SyntheticModelProvider(ModelProvider):
 
     @staticmethod
     def _detokenize(tokens) -> str:
-        parts = []
-        for token in tokens:
-            if token.text == "####":
-                parts.append("\n#### ")
-            else:
-                parts.append(token.text + " ")
-        return "".join(parts).strip()
+        return " ".join(token.text for token in tokens).strip()

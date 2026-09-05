@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 
 from .loaded_token import LoadedToken
 
@@ -17,6 +17,7 @@ class LoadedChain:
     terminated_reason: str = "max_tokens"
     predicted: Optional[str] = None
     correct: Optional[bool] = None
+    answer_evaluation: dict[str, Any] = field(default_factory=dict)
 
     def recent_mean_logprob(self, upto_index: int, window: int) -> float:
         start = max(0, upto_index - window + 1)

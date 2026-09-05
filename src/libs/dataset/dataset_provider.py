@@ -18,7 +18,9 @@ class DatasetProvider(ABC):
     """
 
     @abstractmethod
-    def load(self, *, split: str, num_questions: int) -> list[DatasetEntry]:
+    def load(
+        self, *, split: str, num_questions: int, sample_seed: int
+    ) -> list[DatasetEntry]:
         """Return up to ``num_questions`` entries from ``split``."""
 
     @abstractmethod
@@ -28,3 +30,13 @@ class DatasetProvider(ABC):
     @abstractmethod
     def is_correct(self, entry: DatasetEntry, predicted: Optional[str]) -> bool:
         """Return whether ``predicted`` matches the entry's gold answer."""
+
+    @abstractmethod
+    def answers_equivalent(
+        self, first: Optional[str], second: Optional[str]
+    ) -> Optional[bool]:
+        """Return semantic answer equality, or ``None`` when either answer is invalid."""
+
+    @abstractmethod
+    def evaluate_completion(self, entry: DatasetEntry, completion: str) -> dict:
+        """Return parsed answer, validity flags, and correctness metadata."""

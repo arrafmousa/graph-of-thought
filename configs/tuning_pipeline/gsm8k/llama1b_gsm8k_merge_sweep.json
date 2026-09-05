@@ -25,7 +25,7 @@
     "dtype": "float16",
     "device": "cuda",
     "hidden_layer": -1,
-    "system_instruction": "Reason through the problem step by step. After the reasoning, state the final numeric answer on a new line in the form '#### <number>'. Do not write anything after the number."
+    "system_instruction": "Reason through the problem step by step. After the reasoning, wrap the final numeric answer exactly as '#### <number> ####' with nothing after the closing '####'."
   },
   "generation": {
     "num_chains": 10,

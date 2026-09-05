@@ -10,6 +10,7 @@ from typing import Any, Union
 from .dataset_provider import DatasetProvider
 from .dataset_provider_kind import DatasetProviderKind
 from .gsm8k_dataset import Gsm8kDataset
+from .huggingface_math_dataset import HuggingFaceMathDataset
 from .synthetic_dataset import SyntheticDataset
 
 
@@ -24,6 +25,7 @@ class DatasetRegistry:
         return cls(
             {
                 DatasetProviderKind.GSM8K: Gsm8kDataset,
+                DatasetProviderKind.HUGGINGFACE_MATH: HuggingFaceMathDataset,
                 DatasetProviderKind.SYNTHETIC: SyntheticDataset,
             }
         )

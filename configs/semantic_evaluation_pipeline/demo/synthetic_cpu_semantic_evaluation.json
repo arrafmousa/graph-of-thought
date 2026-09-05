@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0.0",
+  "run": {
+    "task_name": "semantic-demo-synthetic",
+    "dashboard_template": "evaluation",
+    "dashboard_refresh_seconds": 0,
+    "terminal_progress": false
+  },
+  "experiment": {
+    "minimum_datasets": 1,
+    "minimum_questions_per_dataset": 2
+  },
+  "randomness": {"seeds": {"generation": 12345}},
+  "datasets": [
+    {
+      "name": "synthetic_math",
+      "provider": "synthetic",
+      "dataset_id": "local/synthetic-arithmetic",
+      "dataset_revision": "v1",
+      "dataset_configs": ["default"],
+      "split": "test",
+      "num_questions": 2,
+      "sample_seed": 101,
+      "question_fields": ["question"],
+      "answer_field": "answer",
+      "id_field": "",
+      "metadata_fields": [],
+      "answer_mode": "number",
+      "answer_delimiter": "####",
+      "require_answer_delimiter": true,
+      "math_parser_timeout_seconds": 0
+    }
+  ],
+  "model": {
+    "provider": "synthetic",
+    "model_id": "local/synthetic-token-model",
+    "model_revision": "v1",
+    "dtype": "float32",
+    "device": "cpu",
+    "hidden_layer": -1,
+    "system_instruction": "Reason step by step, then wrap the final answer exactly as '#### <answer> ####'."
+  },
+  "generation": {
+    "num_chains": 3,
+    "max_new_tokens": 12,
+    "temperature": 0.8,
+    "top_p": 0.95,
+    "batch_size": 2
+  },
+  "tuning": {
+    "heuristics": ["hidden_cosine", "pooled_hidden_cosine"],
+    "thresholds": [0.9, 0.97],
+    "pooling_k": 4,
+    "depth_policy": "absolute_window",
+    "max_depth_difference": 4,
+    "confidence_window": 8,
+    "representative_policy": "recent_mean_logprob",
+    "context_window": 6
+  },
+  "judge": {
+    "provider": "synthetic",
+    "endpoint": "synthetic",
+    "api_path": "synthetic",
+    "deployment": "synthetic-judge",
+    "api_key_environment_variable": "AZURE_OPENAI_API_KEY",
+    "request_url": "/chat/completions",
+    "batch_endpoint": "/chat/completions",
+    "completion_window": "24h",
+    "system_instruction": "Judge whether two reasoning prefixes encode the same mathematical state.",
+    "pair_prompt_template": "Question:\n{question}\n\nReasoning path A through the candidate merge:\n{path_a}\n\nReasoning path B through the candidate merge:\n{path_b}\n\nClassify whether the paths have inferred the same information so one continuation is redundant.",
+    "max_completion_tokens": 256,
+    "max_score": 4,
+    "parse_attempts": 2,
+    "poll_interval_seconds": 60,
+    "max_wait_seconds": 90000,
+    "submission_attempts": 3,
+    "submission_retry_seconds": 60
+  },
+  "quality": {
+    "semantic_weight": 1.0,
+    "continuation_weight": 1.0,
+    "quality_beta": 1.0,
+    "missing_answer_agreement_score": 0.0
+  },
+  "report": {"manual_review_pairs": 20, "graph_reports": 4}
+}

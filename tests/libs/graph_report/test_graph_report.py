@@ -1,7 +1,7 @@
 """Tests for the graph HTML report library."""
 from __future__ import annotations
 
-from libs.graph_report import GraphHtmlReport
+from libs.graph_report import GraphHtmlReport, SemanticEvaluationReport
 from libs.graph_report import report_html
 
 
@@ -90,3 +90,47 @@ def test_report_renders_all_sections():
 def test_color_for_root_is_neutral():
     assert report_html.color_for(-1) == "#5a6473"
     assert report_html.color_for(0).startswith("hsl(")
+
+
+def test_semantic_evaluation_report_renders_rankings_and_review():
+    summary = {
+        "experiment": {"datasets": 5, "questions": 100, "unique_pairs": 2, "merge_occurrences": 3, "graphs": 1},
+        "configurations": [
+            {
+                "heuristic": "hidden_cosine",
+                "threshold": 0.95,
+                "graphs": 1,
+                "accepted_merges": 3,
+                "mean_semantic_score": 0.8,
+                "same_final_answer_probability": 0.75,
+                "different_final_answer_probability": 0.25,
+                "mean_coverage_proxy": 0.1,
+                "mean_graph_quality_score": 0.2,
+            }
+        ],
+        "dataset_configurations": [],
+        "graphs": [],
+    }
+    review = [
+        {
+            "dataset": "math500",
+            "question_id": "q1",
+            "heuristic": "hidden_cosine",
+            "threshold": 0.95,
+            "similarity": 0.96,
+            "equivalence_label": "equivalent",
+            "equivalence_score": 4,
+            "same_final_answer": True,
+            "judge_redundancy_safe": True,
+            "path_a": "derive x=2",
+            "path_b": "solve for x and get 2",
+            "critical_difference": "",
+        }
+    ]
+
+    html = SemanticEvaluationReport().render(summary=summary, review_pairs=review)
+
+    assert "configuration ranking" in html
+    assert "manual merge review" in html
+    assert "75.00%" in html
+    assert "derive x=2" in html
