@@ -27,6 +27,69 @@ def _run(tmp_path) -> Path:
     )
 
 
+def _demo_config() -> Path:
+    return (
+        _REPO
+        / "configs"
+        / "semantic_evaluation_pipeline"
+        / "demo"
+        / "synthetic_cpu_semantic_evaluation.json"
+    )
+
+
+def test_generate_then_judge_stages_resume_without_regeneration(tmp_path):
+    orchestrator = SemanticEvaluationOrchestrator(
+        repo_root=tmp_path,
+        schema_path=_REPO / "configs" / "semantic_evaluation_pipeline" / "schema.json",
+        tracked_packages=[],
+    )
+    # Stage 1: GPU-side generation + graphs only, no judging.
+    gen_dir = orchestrator.run(
+        config_path=_demo_config(), entrypoint="test", command="test",
+        stage="generate",
+    )
+    gen_manifest = json.loads((gen_dir / "run_manifest.json").read_text(encoding="utf-8"))
+    ManifestValidator().validate(gen_manifest)
+    assert gen_manifest["status"] == "completed"
+    assert gen_manifest["outputs"]["stage"] == "generate"
+    assert (gen_dir / "artifacts" / "evaluation" / "pair_requests.jsonl").is_file()
+    assert (gen_dir / "artifacts" / "evaluation" / "merge_occurrences_raw.jsonl").is_file()
+    assert (gen_dir / "artifacts" / "evaluation" / "generation_state.json").is_file()
+    # No judging happened yet.
+    assert not (gen_dir / "artifacts" / "evaluation" / "pair_judgments.jsonl").is_file()
+    assert not (gen_dir / "artifacts" / "reports" / "semantic_evaluation.html").is_file()
+
+    graphs_before = (gen_dir / "artifacts" / "graphs" / "index.json").read_text(
+        encoding="utf-8"
+    )
+
+    # Stage 2: resume judging on the same run dir, no regeneration.
+    judged_dir = orchestrator.run(
+        config_path=_demo_config(), entrypoint="test", command="test",
+        stage="judge", resume_run_dir=gen_dir,
+    )
+    assert judged_dir == gen_dir
+    graphs_after = (gen_dir / "artifacts" / "graphs" / "index.json").read_text(
+        encoding="utf-8"
+    )
+    assert graphs_before == graphs_after  # generation artifacts untouched
+
+    judged_manifest = json.loads(
+        (judged_dir / "run_manifest.json").read_text(encoding="utf-8")
+    )
+    ManifestValidator().validate(judged_manifest)
+    assert judged_manifest["status"] == "completed"
+    assert judged_manifest["outputs"]["stage"] == "judged"
+    assert (judged_dir / "artifacts" / "evaluation" / "pair_judgments.jsonl").is_file()
+    assert (judged_dir / "artifacts" / "reports" / "semantic_evaluation.html").is_file()
+    summary = json.loads(
+        (judged_dir / judged_manifest["outputs"]["semantic_summary"]).read_text(
+            encoding="utf-8"
+        )
+    )
+    assert len(summary["graphs"]) == judged_manifest["outputs"]["graphs_built"]
+
+
 def test_semantic_evaluation_run_produces_complete_offline_artifacts(tmp_path):
     run_dir = _run(tmp_path)
     manifest = json.loads((run_dir / "run_manifest.json").read_text(encoding="utf-8"))

@@ -3,6 +3,11 @@
 Orchestrator: `src/main/semantic_evaluation_pipeline` — schema: [`schema.json`](schema.json).
 Entrypoint: `python scripts/evaluate_merges.py --config <config>`.
 
+The run has two stages so the expensive GPU work is preserved even if the Azure judge
+fails: `--stage generate` produces traces + all graphs and persists the judge inputs;
+`--stage judge --run-dir output/<run_id>` resumes judging + reporting on that run without
+regenerating. `--stage all` (default) does both in one process.
+
 This pipeline randomly samples configured Hugging Face math datasets using explicit
 per-dataset seeds, generates complete reasoning traces once, sweeps merge heuristics
 and thresholds offline, and saves every inferred graph. An Azure OpenAI Batch judge

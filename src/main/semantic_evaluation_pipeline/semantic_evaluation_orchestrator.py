@@ -47,39 +47,45 @@ class SemanticEvaluationOrchestrator:
         self._judge_registry = JudgeProviderRegistry.with_builtin_providers()
         self._quality_analyzer = GraphMergeQualityAnalyzer()
 
-    def run(self, config_path: Path, entrypoint: str, command: str) -> Path:
+    def run(
+        self,
+        config_path: Path,
+        entrypoint: str,
+        command: str,
+        *,
+        stage: str = "all",
+        resume_run_dir: Path | None = None,
+    ) -> Path:
         config = self._config_loader.load(config_path)
         self._validate_scope(config)
+        if stage not in ("all", "generate", "judge"):
+            raise ValueError(f"Unknown stage '{stage}'")
+        if stage == "judge":
+            if resume_run_dir is None:
+                raise ValueError("stage 'judge' requires resume_run_dir")
+            return self._run_judge_stage(config, Path(resume_run_dir), entrypoint, command)
+
         run_id = self._run_id_factory.create(config["run"]["task_name"])
         run_dir = self._repo_root / "output" / run_id
         (run_dir / "logs").mkdir(parents=True, exist_ok=True)
         (run_dir / "artifacts").mkdir(parents=True, exist_ok=True)
 
         logger = self._configure_logger(run_id, run_dir / "logs" / "run.log")
-        template_name = config["run"]["dashboard_template"]
-        dashboard = self._dashboard_registry.create(template_name)
-        dashboard.set_run_id(run_id)
-        LiveDashboardWriter(
-            dashboard,
-            run_dir / "dashboard.html",
-            config["run"]["dashboard_refresh_seconds"],
-        ).write()
-        if config["run"]["terminal_progress"]:
-            TerminalDashboardWriter(dashboard, sys.stdout)
-        telemetry = TelemetryWriter(run_dir / "telemetry.jsonl", run_id, dashboard=dashboard)
-        manifest = self._create_manifest(
-            config, run_id, config_path, entrypoint, command, telemetry.schema_version
+        telemetry, manifest, manifest_path = self._open_run(
+            config, run_id, run_dir, config_path, entrypoint, command
         )
-        manifest_path = run_dir / "run_manifest.json"
-        manifest.save(manifest_path)
 
         started = time.monotonic()
         manifest.mark_running()
         manifest.save(manifest_path)
         telemetry.emit("run_start", _COMPONENT, "run", message=f"run {run_id} started")
-        logger.info("semantic evaluation run %s started", run_id)
+        logger.info("semantic evaluation run %s started (stage=%s)", run_id, stage)
         try:
-            outputs = self._execute(config, run_dir, telemetry, logger)
+            state = self._execute_generate(config, run_dir, telemetry, logger)
+            if stage == "generate":
+                outputs = self._generation_outputs(config, state)
+            else:
+                outputs = self._execute_judge(config, run_dir, telemetry, logger, state)
             duration = time.monotonic() - started
             manifest.mark_completed(outputs, duration)
             telemetry.emit(
@@ -102,19 +108,130 @@ class SemanticEvaluationOrchestrator:
             self._finalize(manifest, manifest_path, run_dir, telemetry)
         return run_dir
 
-    def _execute(self, config, run_dir, telemetry, logger) -> dict[str, Any]:
+    def _run_judge_stage(self, config, run_dir, entrypoint, command) -> Path:
+        run_dir = Path(run_dir)
+        manifest_path = run_dir / "run_manifest.json"
+        if not manifest_path.is_file():
+            raise ValueError(f"No run manifest to resume at {run_dir}")
+        run_id = run_dir.name
+        logger = self._configure_logger(f"{run_id}.judge", run_dir / "logs" / "run.log")
+        telemetry, dashboard = self._open_dashboard(config, run_id, run_dir)
+        manifest = RunManifest.load(manifest_path)
+
+        started = time.monotonic()
+        manifest.mark_running()
+        manifest.save(manifest_path)
+        telemetry.emit("run_start", _COMPONENT, "run", message=f"resume judging {run_id}")
+        logger.info("semantic evaluation run %s resumed (stage=judge)", run_id)
+        try:
+            state = self._load_generation_state(run_dir)
+            outputs = self._execute_judge(config, run_dir, telemetry, logger, state)
+            duration = time.monotonic() - started
+            manifest.mark_completed(outputs, duration)
+            telemetry.emit(
+                "run_end",
+                _COMPONENT,
+                "run",
+                metrics={"duration_seconds": duration},
+                message="judging completed",
+            )
+            telemetry.component("summary").update("judging_duration_s", round(duration, 3))
+        except Exception as exc:
+            duration = time.monotonic() - started
+            error = {"type": type(exc).__name__, "message": str(exc)}
+            manifest.mark_failed(error, duration)
+            telemetry.emit("exception", _COMPONENT, "run", error=error, message="judging failed")
+            logger.exception("semantic evaluation run %s judging failed", run_id)
+            self._finalize(manifest, manifest_path, run_dir, telemetry)
+            raise
+        else:
+            self._finalize(manifest, manifest_path, run_dir, telemetry)
+        return run_dir
+
+    def _open_dashboard(self, config, run_id, run_dir):
+        dashboard = self._dashboard_registry.create(config["run"]["dashboard_template"])
+        dashboard.set_run_id(run_id)
+        LiveDashboardWriter(
+            dashboard,
+            run_dir / "dashboard.html",
+            config["run"]["dashboard_refresh_seconds"],
+        ).write()
+        if config["run"]["terminal_progress"]:
+            TerminalDashboardWriter(dashboard, sys.stdout)
+        telemetry = TelemetryWriter(
+            run_dir / "telemetry.jsonl", run_id, dashboard=dashboard
+        )
+        return telemetry, dashboard
+
+    def _open_run(self, config, run_id, run_dir, config_path, entrypoint, command):
+        telemetry, _dashboard = self._open_dashboard(config, run_id, run_dir)
+        manifest = self._create_manifest(
+            config, run_id, config_path, entrypoint, command, telemetry.schema_version
+        )
+        manifest_path = run_dir / "run_manifest.json"
+        manifest.save(manifest_path)
+        return telemetry, manifest, manifest_path
+
+
+    def _execute_generate(self, config, run_dir, telemetry, logger) -> dict[str, Any]:
         questions, providers = self._generate_traces(config, run_dir, telemetry, logger)
         graphs, occurrences, requests, skipped_first_token_merges = self._build_graphs(
             config, run_dir, questions, providers, telemetry, logger
         )
         evaluation_root = run_dir / "artifacts" / "evaluation"
         evaluation_root.mkdir(parents=True, exist_ok=True)
-        self._write_jsonl(
-            evaluation_root / "pair_requests.jsonl", list(requests.values())
+        request_rows = list(requests.values())
+        self._write_jsonl(evaluation_root / "pair_requests.jsonl", request_rows)
+        self._write_jsonl(evaluation_root / "merge_occurrences_raw.jsonl", occurrences)
+        (evaluation_root / "generation_state.json").write_text(
+            json.dumps(
+                {
+                    "questions": len(questions),
+                    "graphs": len(graphs),
+                    "unique_pairs": len(request_rows),
+                    "skipped_first_token_merges": skipped_first_token_merges,
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
         )
-        judgment_rows = self._judge_pairs(
-            config, run_dir, list(requests.values()), telemetry
+        telemetry.component("summary").update("datasets", len(config["datasets"]))
+        telemetry.component("summary").update("questions", len(questions))
+        telemetry.component("summary").update("graphs", len(graphs))
+        telemetry.component("summary").update("unique_pairs", len(request_rows))
+        return {
+            "questions": len(questions),
+            "graphs": graphs,
+            "occurrences": occurrences,
+            "requests": request_rows,
+            "skipped": skipped_first_token_merges,
+        }
+
+    def _load_generation_state(self, run_dir) -> dict[str, Any]:
+        evaluation_root = run_dir / "artifacts" / "evaluation"
+        requests = self._read_jsonl(evaluation_root / "pair_requests.jsonl")
+        occurrences = self._read_jsonl(evaluation_root / "merge_occurrences_raw.jsonl")
+        graphs = json.loads(
+            (run_dir / "artifacts" / "graphs" / "index.json").read_text(encoding="utf-8")
+        )["graphs"]
+        state = json.loads(
+            (evaluation_root / "generation_state.json").read_text(encoding="utf-8")
         )
+        return {
+            "questions": state["questions"],
+            "graphs": graphs,
+            "occurrences": occurrences,
+            "requests": requests,
+            "skipped": state["skipped_first_token_merges"],
+        }
+
+    def _execute_judge(self, config, run_dir, telemetry, logger, state) -> dict[str, Any]:
+        evaluation_root = run_dir / "artifacts" / "evaluation"
+        evaluation_root.mkdir(parents=True, exist_ok=True)
+        requests = state["requests"]
+        occurrences = state["occurrences"]
+        graphs = state["graphs"]
+        judgment_rows = self._judge_pairs(config, run_dir, requests, telemetry)
         judgments = {row["pair_id"]: row for row in judgment_rows}
         quality_config = config["quality"]
         analysis = self._quality_analyzer.analyze(
@@ -132,10 +249,10 @@ class SemanticEvaluationOrchestrator:
         pair_occurrences = analysis.pop("pair_occurrences")
         analysis["experiment"] = {
             "datasets": len(config["datasets"]),
-            "questions": len(questions),
+            "questions": state["questions"],
             "unique_pairs": len(requests),
             "merge_occurrences": len(occurrences),
-            "skipped_first_token_merges": skipped_first_token_merges,
+            "skipped_first_token_merges": state["skipped"],
             "min_join_token_index": config["tuning"]["min_join_token_index"],
             "graphs": len(graphs),
         }
@@ -166,12 +283,14 @@ class SemanticEvaluationOrchestrator:
             encoding="utf-8",
         )
         telemetry.component("summary").update("datasets", len(config["datasets"]))
-        telemetry.component("summary").update("questions", len(questions))
+        telemetry.component("summary").update("questions", state["questions"])
         telemetry.component("summary").update("graphs", len(graphs))
         telemetry.component("summary").update("unique_pairs", len(requests))
         return self._outputs(
-            config, questions, graphs, requests, occurrences, graph_reports, report_relative
+            config, state["questions"], graphs, requests, occurrences,
+            graph_reports, report_relative,
         )
+
 
     def _generate_traces(self, config, run_dir, telemetry, logger):
         traces_root = run_dir / "artifacts" / "traces"
@@ -765,6 +884,12 @@ class SemanticEvaluationOrchestrator:
                 handle.write(json.dumps(row) + "\n")
 
     @staticmethod
+    def _read_jsonl(path: Path) -> list[dict[str, Any]]:
+        with Path(path).open("r", encoding="utf-8") as handle:
+            return [json.loads(line) for line in handle if line.strip()]
+
+
+    @staticmethod
     def _select_graph_reports(rows, limit):
         selected = []
         represented = set()
@@ -814,7 +939,7 @@ class SemanticEvaluationOrchestrator:
 
     @staticmethod
     def _outputs(
-        config, questions, graphs, requests, occurrences, graph_reports, report_relative
+        config, questions_count, graphs, requests, occurrences, graph_reports, report_relative
     ):
         artifacts = [
             "artifacts/traces/index.json",
@@ -839,13 +964,39 @@ class SemanticEvaluationOrchestrator:
             "semantic_summary": "artifacts/evaluation/semantic_summary.json",
             "semantic_report": report_relative.as_posix(),
             "graph_reports": graph_reports,
+            "stage": "judged",
             "datasets_evaluated": len(config["datasets"]),
-            "questions_sampled": len(questions),
+            "questions_sampled": questions_count,
             "graphs_built": len(graphs),
             "unique_pairs_judged": len(requests),
             "merge_occurrences_count": len(occurrences),
             "artifacts": artifacts,
         }
+
+    @staticmethod
+    def _generation_outputs(config, state) -> dict[str, Any]:
+        artifacts = [
+            "artifacts/traces/index.json",
+            "artifacts/graphs/index.json",
+            "artifacts/evaluation/pair_requests.jsonl",
+            "artifacts/evaluation/merge_occurrences_raw.jsonl",
+            "artifacts/evaluation/generation_state.json",
+        ]
+        return {
+            "dashboard": "dashboard.html",
+            "telemetry": "telemetry.jsonl",
+            "traces_index": "artifacts/traces/index.json",
+            "graphs_index": "artifacts/graphs/index.json",
+            "pair_requests": "artifacts/evaluation/pair_requests.jsonl",
+            "generation_state": "artifacts/evaluation/generation_state.json",
+            "stage": "generate",
+            "datasets_evaluated": len(config["datasets"]),
+            "questions_sampled": state["questions"],
+            "graphs_built": len(state["graphs"]),
+            "unique_pairs_pending": len(state["requests"]),
+            "artifacts": artifacts,
+        }
+
 
     def _finalize(self, manifest, manifest_path, run_dir, telemetry) -> None:
         telemetry.close()

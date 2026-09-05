@@ -21,6 +21,18 @@ def main(argv: list[str]) -> int:
         description="Evaluate reasoning-state merges across configured math datasets."
     )
     parser.add_argument("--config", required=True, help="Path to an evaluation JSON config.")
+    parser.add_argument(
+        "--stage",
+        choices=["all", "generate", "judge"],
+        default="all",
+        help="all: generate+judge (default); generate: GPU traces+graphs only; "
+        "judge: resume Azure judging+report on an existing --run-dir.",
+    )
+    parser.add_argument(
+        "--run-dir",
+        default=None,
+        help="Existing output/<run_id> directory to resume judging on (stage=judge).",
+    )
     args = parser.parse_args(argv)
     orchestrator = SemanticEvaluationOrchestrator(
         repo_root=_REPO_ROOT,
@@ -32,6 +44,8 @@ def main(argv: list[str]) -> int:
         config_path=Path(args.config),
         entrypoint="scripts/evaluate_merges.py",
         command=command,
+        stage=args.stage,
+        resume_run_dir=Path(args.run_dir) if args.run_dir else None,
     )
     print(f"Run complete: {run_dir}")
     return 0
