@@ -149,3 +149,29 @@ def test_production_config_samples_twenty_questions_from_five_pinned_datasets():
     assert config["judge"]["deployment"] == "gpt-5.1"
     assert config["judge"]["api_path"] == "openai/v1"
     assert config["judge"]["request_url"] == "/v1/chat/completions"
+
+
+def test_pilot_config_samples_five_questions_from_five_pinned_datasets():
+    config = json.loads(
+        (
+            _REPO
+            / "configs"
+            / "semantic_evaluation_pipeline"
+            / "math"
+            / "llama1b_five_dataset_pilot.json"
+        ).read_text(encoding="utf-8")
+    )
+    datasets = config["datasets"]
+
+    assert [item["name"] for item in datasets] == [
+        "gsm8k",
+        "math500",
+        "aime2025",
+        "svamp",
+        "asdiv",
+    ]
+    assert all(item["num_questions"] == 5 for item in datasets)
+    assert config["experiment"]["minimum_questions_per_dataset"] == 5
+    assert all(len(item["dataset_revision"]) == 40 for item in datasets)
+    assert config["judge"]["provider"] == "azure_openai_batch"
+    assert config["generation"]["batch_size"] == 6

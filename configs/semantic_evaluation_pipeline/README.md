@@ -30,4 +30,5 @@ The Azure key is read only from the environment variable named by
 | Config | Runs |
 | --- | --- |
 | [`demo/synthetic_cpu_semantic_evaluation.json`](demo/synthetic_cpu_semantic_evaluation.json) | Small deterministic CPU test using synthetic data and judge. |
+| [`math/llama1b_five_dataset_pilot.json`](math/llama1b_five_dataset_pilot.json) | Cheap pilot: 5 seeded questions each from the same five datasets; identical model/judge/merge settings; use to validate the pipeline before the full run. |
 | [`math/llama1b_five_dataset_azure_batch.json`](math/llama1b_five_dataset_azure_batch.json) | 20 seeded questions each from GSM8K, MATH-500, AIME 2025, SVAMP, and ASDiv; six Llama chains per question; 15 merge settings; Azure OpenAI `gpt-5.1` Batch judge. |
