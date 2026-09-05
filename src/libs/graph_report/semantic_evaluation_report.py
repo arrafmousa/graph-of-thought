@@ -34,12 +34,17 @@ class SemanticEvaluationReport:
             ("questions", experiment.get("questions", 0)),
             ("unique judged pairs", experiment.get("unique_pairs", 0)),
             ("merge occurrences", experiment.get("merge_occurrences", 0)),
+            ("first-token merges skipped", experiment.get("skipped_first_token_merges", 0)),
             ("graphs", experiment.get("graphs", 0)),
         ]
         return (
             "<section class=\"panel\"><h2>experiment</h2>"
             f"{report_html.tiles(pairs)}"
-            "<p class=\"legend\">Pair judgments compare only the two reasoning prefixes "
+            "<p class=\"legend\">Only merges whose join point is after the first token "
+            "(index &ge; "
+            f"{experiment.get('min_join_token_index', 1)}"
+            ") are judged; trivial first-token joins are excluded. "
+            "Pair judgments compare only the two reasoning prefixes "
             "available at the merge point; final answers are withheld from the judge. "
             "Continuation agreement is then measured independently from completed chains. "
             "The whole-graph score is an F-score over configured merge precision and node "

@@ -103,7 +103,7 @@ class SemanticEvaluationOrchestrator:
 
     def _execute(self, config, run_dir, telemetry, logger) -> dict[str, Any]:
         questions, providers = self._generate_traces(config, run_dir, telemetry, logger)
-        graphs, occurrences, requests = self._build_graphs(
+        graphs, occurrences, requests, skipped_first_token_merges = self._build_graphs(
             config, run_dir, questions, providers, telemetry, logger
         )
         evaluation_root = run_dir / "artifacts" / "evaluation"
@@ -134,6 +134,8 @@ class SemanticEvaluationOrchestrator:
             "questions": len(questions),
             "unique_pairs": len(requests),
             "merge_occurrences": len(occurrences),
+            "skipped_first_token_merges": skipped_first_token_merges,
+            "min_join_token_index": config["tuning"]["min_join_token_index"],
             "graphs": len(graphs),
         }
         graph_reports = self._render_graph_reports(
@@ -311,6 +313,8 @@ class SemanticEvaluationOrchestrator:
         occurrences: list[dict[str, Any]] = []
         requests: dict[str, dict[str, Any]] = {}
         graphs: list[dict[str, Any]] = []
+        min_join = config["tuning"]["min_join_token_index"]
+        skipped_first_token_merges = 0
         telemetry.emit("phase_start", _COMPONENT, "consolidation")
         for question_index, item in enumerate(questions):
             meta, chains = TraceLoader().load_question(run_dir / item["trace_dir"])
@@ -365,6 +369,12 @@ class SemanticEvaluationOrchestrator:
                         }
                     )
                     for merge in graph.merges:
+                        if (
+                            merge["node_a"][1] < min_join
+                            or merge["node_b"][1] < min_join
+                        ):
+                            skipped_first_token_merges += 1
+                            continue
                         occurrence, request = self._merge_records(
                             item,
                             meta["entry"],
@@ -398,9 +408,13 @@ class SemanticEvaluationOrchestrator:
             "phase_end",
             _COMPONENT,
             "consolidation",
-            metrics={"graphs": len(graphs), "merge_occurrences": len(occurrences)},
+            metrics={
+                "graphs": len(graphs),
+                "merge_occurrences": len(occurrences),
+                "skipped_first_token_merges": skipped_first_token_merges,
+            },
         )
-        return graphs, occurrences, requests
+        return graphs, occurrences, requests, skipped_first_token_merges
 
     def _merge_records(
         self, item, entry, graph_id, heuristic, threshold, merge, chain_map, provider

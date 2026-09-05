@@ -84,7 +84,7 @@
     },
     "tuning": {
       "type": "object",
-      "required": ["heuristics", "thresholds", "pooling_k", "depth_policy", "max_depth_difference", "confidence_window", "representative_policy", "context_window"],
+      "required": ["heuristics", "thresholds", "pooling_k", "depth_policy", "max_depth_difference", "confidence_window", "representative_policy", "context_window", "min_join_token_index"],
       "properties": {
         "heuristics": {"type": "array", "items": {"type": "string", "enum": ["token_identity", "hidden_cosine", "pooled_hidden_cosine"]}},
         "thresholds": {"type": "array", "items": {"type": "number"}},
@@ -93,7 +93,8 @@
         "max_depth_difference": {"type": "integer", "minimum": 0},
         "confidence_window": {"type": "integer", "minimum": 1},
         "representative_policy": {"type": "string", "enum": ["recent_mean_logprob"]},
-        "context_window": {"type": "integer", "minimum": 1}
+        "context_window": {"type": "integer", "minimum": 1},
+        "min_join_token_index": {"type": "integer", "minimum": 0}
       }
     },
     "judge": {

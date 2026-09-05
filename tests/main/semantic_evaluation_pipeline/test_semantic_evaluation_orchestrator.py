@@ -72,16 +72,43 @@ def test_semantic_evaluation_run_produces_complete_offline_artifacts(tmp_path):
     graph_index = json.loads(
         (run_dir / manifest["outputs"]["graphs_index"]).read_text(encoding="utf-8")
     )
-    accepted_merge_count = 0
+    config = json.loads(
+        (
+            _REPO
+            / "configs"
+            / "semantic_evaluation_pipeline"
+            / "demo"
+            / "synthetic_cpu_semantic_evaluation.json"
+        ).read_text(encoding="utf-8")
+    )
+    min_join = config["tuning"]["min_join_token_index"]
+    after_first_token_merges = 0
+    first_token_merges = 0
     for graph_record in graph_index["graphs"]:
         graph_payload = json.loads(
             (run_dir / graph_record["graph_path"]).read_text(encoding="utf-8")
         )
-        accepted_merge_count += len(graph_payload["graph"]["merges"])
-    assert len(occurrences) == accepted_merge_count
+        for merge in graph_payload["graph"]["merges"]:
+            if merge["node_a"][1] >= min_join and merge["node_b"][1] >= min_join:
+                after_first_token_merges += 1
+            else:
+                first_token_merges += 1
+    assert min_join >= 1
+    assert first_token_merges > 0
+    assert len(occurrences) == after_first_token_merges
+    assert all(
+        row["node_a"][1] >= min_join and row["node_b"][1] >= min_join
+        for row in occurrences
+    )
     assert {request["pair_id"] for request in requests} == {
         occurrence["pair_id"] for occurrence in occurrences
     }
+
+    summary_experiment = json.loads(
+        (run_dir / manifest["outputs"]["semantic_summary"]).read_text(encoding="utf-8")
+    )["experiment"]
+    assert summary_experiment["skipped_first_token_merges"] == first_token_merges
+    assert summary_experiment["min_join_token_index"] == min_join
 
     summary = json.loads(
         (run_dir / manifest["outputs"]["semantic_summary"]).read_text(encoding="utf-8")

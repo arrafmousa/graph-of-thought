@@ -7,7 +7,9 @@ This pipeline randomly samples configured Hugging Face math datasets using expli
 per-dataset seeds, generates complete reasoning traces once, sweeps merge heuristics
 and thresholds offline, and saves every inferred graph. An Azure OpenAI Batch judge
 then classifies every unique accepted merge pair from the two reasoning prefixes at
-the merge point. Final answers are withheld from the judge and compared separately.
+the merge point. Only merges whose join point is after the first token
+(`tuning.min_join_token_index`) are judged, so trivial shared-root joins are excluded.
+Final answers are withheld from the judge and compared separately.
 
 Outputs include all trace and graph JSON, Azure batch request/status/result files,
 pair judgments, continuation-agreement statistics, whole-graph quality scores, a

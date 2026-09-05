@@ -127,7 +127,8 @@
     "max_depth_difference": 4,
     "confidence_window": 8,
     "representative_policy": "recent_mean_logprob",
-    "context_window": 12
+    "context_window": 12,
+    "min_join_token_index": 1
   },
   "judge": {
     "provider": "azure_openai_batch",
