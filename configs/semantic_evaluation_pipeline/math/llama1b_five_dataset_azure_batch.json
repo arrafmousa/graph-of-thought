@@ -117,7 +117,7 @@
     "max_new_tokens": 384,
     "temperature": 0.8,
     "top_p": 0.95,
-    "batch_size": 2
+    "batch_size": 6
   },
   "tuning": {
     "heuristics": ["token_identity", "hidden_cosine", "pooled_hidden_cosine"],
