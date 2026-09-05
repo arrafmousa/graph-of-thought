@@ -46,3 +46,25 @@ def test_two_classes_detected(tmp_path, monkeypatch):
     monkeypatch.setattr(validate_repo, "SRC", tmp_path / "src")
     problems = validate_repo.check_one_class_per_file()
     assert any("multiple classes" in p for p in problems)
+
+
+def test_config_layout_flags_loose_and_unnested_configs(tmp_path, monkeypatch):
+    configs = tmp_path / "configs"
+    main = tmp_path / "src" / "main"
+    (main / "run_pipeline").mkdir(parents=True)
+    (configs / "run_pipeline").mkdir(parents=True)
+    (configs / "run_pipeline" / "schema.json").write_text("{}", encoding="utf-8")
+    (configs / "run_pipeline" / "unnested.json").write_text("{}", encoding="utf-8")
+    (configs / "loose.json").write_text("{}", encoding="utf-8")
+    (configs / "orphan_pipeline").mkdir()
+    (configs / "orphan_pipeline" / "demo").mkdir()
+    (configs / "orphan_pipeline" / "demo" / "ok.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(validate_repo, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(validate_repo, "MAIN", main)
+
+    problems = validate_repo.check_config_layout()
+
+    assert any("loose.json" in p for p in problems)
+    assert any("unnested.json" in p for p in problems)
+    assert any("no matching orchestrator src/main/orphan_pipeline" in p for p in problems)
+    assert any("missing README.md" in p for p in problems)

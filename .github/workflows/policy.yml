@@ -17,7 +17,7 @@ jobs:
       - name: Tests
         run: python -m pytest -q
       - name: Representative run
-        run: python scripts/run.py --config configs/example_run.json
+        run: python scripts/run.py --config configs/run_pipeline/demo/synthetic_workload_smoke.json
       - name: Validate run artifacts
         run: |
           latest=$(ls -dt output/*/ | head -1)

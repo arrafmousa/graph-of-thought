@@ -6,7 +6,7 @@ import pytest
 from libs.config import ConfigError, ConfigLoader
 
 _REPO = Path(__file__).resolve().parents[3]
-_SCHEMA = _REPO / "configs" / "schema" / "run_config.schema.json"
+_SCHEMA = _REPO / "configs" / "run_pipeline" / "schema.json"
 
 
 def _loader() -> ConfigLoader:
@@ -14,13 +14,17 @@ def _loader() -> ConfigLoader:
 
 
 def test_loads_valid_example_config():
-    data = _loader().load(_REPO / "configs" / "example_run.json")
+    data = _loader().load(
+        _REPO / "configs" / "run_pipeline" / "demo" / "synthetic_workload_smoke.json"
+    )
     assert data["run"]["task_name"]
     assert data["run"]["dashboard_template"] == "generic"
 
 
 def test_loads_dashboard_demo_config():
-    data = _loader().load(_REPO / "configs" / "dashboard_demo.json")
+    data = _loader().load(
+        _REPO / "configs" / "run_pipeline" / "demo" / "live_dashboard_preview.json"
+    )
     assert data["workload"]["interval_seconds"] == 2
     assert data["workload"]["value_min"] == 1
     assert data["workload"]["value_max"] == 3

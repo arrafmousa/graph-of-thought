@@ -13,11 +13,11 @@ _REPO = Path(__file__).resolve().parents[3]
 def test_graph_run_produces_valid_artifacts(tmp_path):
     orchestrator = GraphOrchestrator(
         repo_root=tmp_path,
-        schema_path=_REPO / "configs" / "schema" / "graph_config.schema.json",
+        schema_path=_REPO / "configs" / "graph_pipeline" / "schema.json",
         tracked_packages=[],
     )
     run_dir = orchestrator.run(
-        config_path=_REPO / "configs" / "graph_demo.json",
+        config_path=_REPO / "configs" / "graph_pipeline" / "demo" / "synthetic_cpu_graphs.json",
         entrypoint="test",
         command="test",
     )
@@ -54,11 +54,11 @@ def test_graph_run_produces_valid_artifacts(tmp_path):
 def test_graph_run_records_provider_classes(tmp_path):
     orchestrator = GraphOrchestrator(
         repo_root=tmp_path,
-        schema_path=_REPO / "configs" / "schema" / "graph_config.schema.json",
+        schema_path=_REPO / "configs" / "graph_pipeline" / "schema.json",
         tracked_packages=[],
     )
     run_dir = orchestrator.run(
-        config_path=_REPO / "configs" / "graph_demo.json",
+        config_path=_REPO / "configs" / "graph_pipeline" / "demo" / "synthetic_cpu_graphs.json",
         entrypoint="test",
         command="test",
     )

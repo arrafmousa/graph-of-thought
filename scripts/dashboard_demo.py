@@ -22,7 +22,7 @@ sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from main.run_pipeline import RunOrchestrator  # noqa: E402
 
-CONFIG_PATH = _REPO_ROOT / "configs" / "dashboard_demo.json"
+CONFIG_PATH = _REPO_ROOT / "configs" / "run_pipeline" / "demo" / "live_dashboard_preview.json"
 
 
 def _find_new_dashboard(output_root: Path, known: set[Path]) -> Optional[Path]:
@@ -40,7 +40,7 @@ def _find_new_dashboard(output_root: Path, known: set[Path]) -> Optional[Path]:
 def main() -> int:
     orchestrator = RunOrchestrator(
         repo_root=_REPO_ROOT,
-        schema_path=_REPO_ROOT / "configs" / "schema" / "run_config.schema.json",
+        schema_path=_REPO_ROOT / "configs" / "run_pipeline" / "schema.json",
         tracked_packages=[],
     )
     output_root = _REPO_ROOT / "output"

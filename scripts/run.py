@@ -1,7 +1,7 @@
 """Entrypoint for a reproducible run (AGENTS.md sections 10, 26).
 
 Usage:
-    python scripts/run.py --config configs/example_run.json
+    python scripts/run.py --config configs/run_pipeline/demo/synthetic_workload_smoke.json
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def main(argv: list[str]) -> int:
 
     orchestrator = RunOrchestrator(
         repo_root=_REPO_ROOT,
-        schema_path=_REPO_ROOT / "configs" / "schema" / "run_config.schema.json",
+        schema_path=_REPO_ROOT / "configs" / "run_pipeline" / "schema.json",
         tracked_packages=TRACKED_PACKAGES,
     )
     command = "python " + " ".join(["scripts/run.py", *argv])

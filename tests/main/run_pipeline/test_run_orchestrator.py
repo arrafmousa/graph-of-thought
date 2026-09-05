@@ -13,13 +13,13 @@ import validate_run  # noqa: E402
 def test_end_to_end_run_produces_valid_artifacts(tmp_path):
     orchestrator = RunOrchestrator(
         repo_root=tmp_path,
-        schema_path=_REPO / "configs" / "schema" / "run_config.schema.json",
+        schema_path=_REPO / "configs" / "run_pipeline" / "schema.json",
         tracked_packages=[],
     )
     run_dir = orchestrator.run(
-        config_path=_REPO / "configs" / "example_run.json",
+        config_path=_REPO / "configs" / "run_pipeline" / "demo" / "synthetic_workload_smoke.json",
         entrypoint="scripts/run.py",
-        command="python scripts/run.py --config configs/example_run.json",
+        command="python scripts/run.py --config configs/run_pipeline/demo/synthetic_workload_smoke.json",
     )
 
     assert (run_dir / "run_manifest.json").is_file()
@@ -62,7 +62,7 @@ def test_workload_values_stay_within_configured_range(tmp_path):
 
     orchestrator = RunOrchestrator(
         repo_root=tmp_path,
-        schema_path=_REPO / "configs" / "schema" / "run_config.schema.json",
+        schema_path=_REPO / "configs" / "run_pipeline" / "schema.json",
         tracked_packages=[],
     )
     run_dir = orchestrator.run(

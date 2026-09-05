@@ -1,7 +1,7 @@
 ---
 name: remote-gpu-run
 description: 'Run this repository''s GPU workloads on Google Colab (the local machine has no GPU). Use when: training a model, GPU inference, benchmarking, "run on GPU", "train remotely", "run on Colab", "remote run", "push and run", "run on T4/A100", GPU experiment, or any run that needs CUDA. Datasets and models come from the Hugging Face Hub only; results are downloaded back into output/. See AGENTS.md section 31.'
-argument-hint: 'Optional: config to run on the remote (e.g. configs/train_sst2.json)'
+argument-hint: 'Optional: config to run on the remote (e.g. configs/train_pipeline/sst2/distilbert_sst2_finetune.json)'
 ---
 
 # Remote GPU Run (Colab)

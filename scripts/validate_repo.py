@@ -136,13 +136,53 @@ def check_test_alignment() -> list[str]:
 
 
 def check_config_schema() -> list[str]:
-    schema_path = REPO_ROOT / "configs" / "schema" / "run_config.schema.json"
-    if not schema_path.is_file():
-        return ["Missing config schema: configs/schema/run_config.schema.json"]
-    schema = json.loads(schema_path.read_text(encoding="utf-8"))
-    if not schema.get("required"):
-        return ["Config schema must declare non-empty 'required' fields"]
-    return []
+    problems: list[str] = []
+    for schema_path in sorted((REPO_ROOT / "configs").glob("*/schema.json")):
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        if not schema.get("required"):
+            problems.append(f"{_rel(schema_path)}: must declare non-empty 'required' fields")
+    return problems
+
+
+def check_config_layout() -> list[str]:
+    """AGENTS.md section 7.5: configs/<orchestrator>/<experiment>/<config>.json."""
+    configs_dir = REPO_ROOT / "configs"
+    if not configs_dir.is_dir():
+        return ["Missing configs/ directory"]
+    problems: list[str] = []
+    for entry in sorted(configs_dir.iterdir()):
+        if entry.name == "__pycache__":
+            continue
+        if entry.is_file():
+            if entry.name != "README.md":
+                problems.append(
+                    f"{_rel(entry)}: config files must live in configs/<orchestrator>/<experiment>/"
+                )
+            continue
+        if not (MAIN / entry.name).is_dir():
+            problems.append(
+                f"configs/{entry.name}: no matching orchestrator src/main/{entry.name}"
+            )
+        if not (entry / "schema.json").is_file():
+            problems.append(f"configs/{entry.name}: missing schema.json")
+        if not (entry / "README.md").is_file():
+            problems.append(f"configs/{entry.name}: missing README.md describing its configs")
+        for config in sorted(entry.rglob("*.json")):
+            if config.name == "schema.json" and config.parent == entry:
+                continue
+            depth = len(config.relative_to(entry).parts)
+            if depth != 2:
+                problems.append(
+                    f"{_rel(config)}: expected configs/<orchestrator>/<experiment>/<config>.json"
+                )
+    for orchestrator in sorted(MAIN.iterdir()):
+        if not orchestrator.is_dir() or orchestrator.name == "__pycache__":
+            continue
+        if not (configs_dir / orchestrator.name).is_dir():
+            problems.append(
+                f"src/main/{orchestrator.name}: no matching configs/{orchestrator.name} folder"
+            )
+    return problems
 
 
 def check_config_defaults() -> list[str]:
@@ -198,6 +238,7 @@ def run_all() -> list[str]:
     problems.extend(check_forbidden_imports())
     problems.extend(check_test_alignment())
     problems.extend(check_config_schema())
+    problems.extend(check_config_layout())
     problems.extend(check_config_defaults())
     return problems
 

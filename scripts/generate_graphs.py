@@ -6,8 +6,8 @@ report for a sampled question. Dataset and model are selected entirely by class
 name in the configuration file (no code changes to switch either).
 
 Usage:
-    python scripts/generate_graphs.py --config configs/graph_demo.json
-    python scripts/generate_graphs.py --config configs/graph_gsm8k.json
+    python scripts/generate_graphs.py --config configs/graph_pipeline/demo/synthetic_cpu_graphs.json
+    python scripts/generate_graphs.py --config configs/graph_pipeline/gsm8k/llama1b_gsm8k_graphs.json
 """
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def main(argv: list[str]) -> int:
 
     orchestrator = GraphOrchestrator(
         repo_root=_REPO_ROOT,
-        schema_path=_REPO_ROOT / "configs" / "schema" / "graph_config.schema.json",
+        schema_path=_REPO_ROOT / "configs" / "graph_pipeline" / "schema.json",
         tracked_packages=TRACKED_PACKAGES,
     )
     command = "python " + " ".join(["scripts/generate_graphs.py", *argv])

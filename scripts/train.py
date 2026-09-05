@@ -1,7 +1,7 @@
 """Entrypoint for a fine-tuning run (AGENTS.md sections 10, 14, 31).
 
 Usage:
-    python scripts/train.py --config configs/train_sst2.json
+    python scripts/train.py --config configs/train_pipeline/sst2/distilbert_sst2_finetune.json
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ def main(argv: list[str]) -> int:
 
     orchestrator = TrainOrchestrator(
         repo_root=_REPO_ROOT,
-        schema_path=_REPO_ROOT / "configs" / "schema" / "train_config.schema.json",
+        schema_path=_REPO_ROOT / "configs" / "train_pipeline" / "schema.json",
         tracked_packages=TRACKED_PACKAGES,
     )
     command = "python " + " ".join(["scripts/train.py", *argv])

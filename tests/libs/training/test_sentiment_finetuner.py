@@ -33,8 +33,10 @@ def test_constructs_without_heavy_deps():
 
 
 def test_train_config_matches_schema():
-    loader = ConfigLoader(_REPO / "configs" / "schema" / "train_config.schema.json")
-    config = loader.load(_REPO / "configs" / "train_sst2.json")
+    loader = ConfigLoader(_REPO / "configs" / "train_pipeline" / "schema.json")
+    config = loader.load(
+        _REPO / "configs" / "train_pipeline" / "sst2" / "distilbert_sst2_finetune.json"
+    )
     t = config["training"]
     assert t["model_id"] == "distilbert-base-uncased"
     assert t["dataset_id"] == "nyu-mll/glue" and t["dataset_config"] == "sst2"

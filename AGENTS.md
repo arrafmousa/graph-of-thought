@@ -43,7 +43,11 @@ The repository MUST follow this conceptual structure:
 ├── .env.example
 ├── .gitignore
 ├── configs/
-│   └── ...
+│   └── <orchestrator>/
+│       ├── schema.json
+│       ├── README.md
+│       └── <experiment>/
+│           └── <config>.json
 ├── output/
 │   └── <run_id>/
 │       ├── run_manifest.json
@@ -263,6 +267,36 @@ Every run MUST preserve the exact effective configuration used for that run.
 The effective configuration MUST be included directly in, or referenced immutably by, `run_manifest.json`.
 
 It must be possible to determine exactly which explicit values were used without reading source code or guessing package defaults that the project intentionally overrode.
+
+### 7.5 Configuration layout
+
+`configs/` MUST mirror `src/main/`: every orchestrator package has exactly one
+configuration folder with the same name, and every configuration folder has exactly one
+orchestrator. The path alone therefore tells you which entrypoint consumes a config.
+
+```text
+configs/
+└── <orchestrator>/            # same name as src/main/<orchestrator>/
+    ├── schema.json            # the schema for this orchestrator's configs
+    ├── README.md
+    └── <experiment>/
+        └── <config>.json
+```
+
+Rules:
+
+- No configuration file may sit directly in `configs/` (only `configs/README.md`).
+- The schema for an orchestrator lives with its configs as `configs/<orchestrator>/schema.json`.
+  It MUST declare non-empty `required` fields.
+- Configs are nested one level deeper by experiment/workload (for example `demo` for
+  CPU-only demos, `gsm8k`, `sst2`). A folder with a single config still uses an experiment
+  folder so the layout stays uniform.
+- Config file names MUST describe what the config runs (model/dataset/workload), not
+  merely restate the folder — e.g. `llama1b_gsm8k_merge_sweep.json`, not `tune.json`.
+- Every configuration folder MUST contain a `README.md` briefly describing the
+  orchestrator, its entrypoint, and each config it holds.
+- Adding a new orchestrator under `src/main/` means adding its configuration folder,
+  schema, and README together.
 
 ---
 
@@ -667,6 +701,7 @@ Where applicable:
 - one-class-per-file;
 - test/source structural alignment;
 - required config-schema properties;
+- configuration layout (section 7.5);
 - prohibited project-owned defaults;
 - telemetry/reporting infrastructure;
 - dashboard renderer availability.

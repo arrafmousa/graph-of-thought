@@ -5,8 +5,8 @@ dashboard per configuration plus a comparison dashboard and ``tuning_summary.jso
 Use the chosen heuristic + threshold in the full-run config for ``generate_graphs.py``.
 
 Usage:
-    python scripts/tune_graph.py --config configs/tune_demo.json
-    python scripts/tune_graph.py --config configs/tune_gsm8k.json
+    python scripts/tune_graph.py --config configs/tuning_pipeline/demo/synthetic_cpu_merge_sweep.json
+    python scripts/tune_graph.py --config configs/tuning_pipeline/gsm8k/llama1b_gsm8k_merge_sweep.json
 """
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ def main(argv: list[str]) -> int:
 
     orchestrator = TuningOrchestrator(
         repo_root=_REPO_ROOT,
-        schema_path=_REPO_ROOT / "configs" / "schema" / "tuning_config.schema.json",
+        schema_path=_REPO_ROOT / "configs" / "tuning_pipeline" / "schema.json",
         tracked_packages=TRACKED_PACKAGES,
     )
     command = "python " + " ".join(["scripts/tune_graph.py", *argv])

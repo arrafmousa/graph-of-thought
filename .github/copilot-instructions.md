@@ -14,6 +14,11 @@ Key invariants (see `AGENTS.md` for the full, binding text):
 - **Configuration is explicit.** No hidden project-owned default values. Required
   fields live in `configs/` and are validated against a versioned schema; missing
   fields must fail loudly (no silent fallbacks).
+- **`configs/` mirrors `src/main/`.** One config folder per orchestrator, same name:
+  `configs/<orchestrator>/<experiment>/<config>.json`, with the orchestrator's schema
+  colocated as `configs/<orchestrator>/schema.json` and a `README.md` in every config
+  folder (e.g. `configs/run_pipeline/demo/synthetic_workload_smoke.json`). No config
+  files directly in `configs/`. See `AGENTS.md` §7.5.
 - **Every run is reproducible.** Runs write `output/<run_id>/run_manifest.json`,
   `telemetry.jsonl`, and a static `dashboard.html`. A run must not do substantive
   work before a valid manifest and telemetry stream exist.
@@ -33,6 +38,6 @@ Validation entrypoints:
 ```bash
 python scripts/validate_repo.py          # architecture / policy checks
 python -m pytest -q                       # unit + architecture tests
-python scripts/run.py --config configs/example_run.json
+python scripts/run.py --config configs/run_pipeline/demo/synthetic_workload_smoke.json
 python scripts/validate_run.py output/<run_id>
 ```

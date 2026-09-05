@@ -44,7 +44,7 @@ class TuningComparisonReport:
         return (
             "<section class=\"panel\"><h2>selectable vocabulary (enums)</h2>"
             "<div class=\"legend\">Pick a heuristic + threshold below and set them in the "
-            "full-run config (<code>configs/graph_*.json</code>).</div>"
+            "full-run config (<code>configs/graph_pipeline/&lt;experiment&gt;/*.json</code>).</div>"
             f"<table>{''.join(rows)}</table></section>"
         )
 

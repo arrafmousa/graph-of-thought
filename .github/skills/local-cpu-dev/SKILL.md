@@ -1,7 +1,7 @@
 ---
 name: local-cpu-dev
 description: 'Develop and run this repository locally on CPU (no GPU on this machine). Use when: local development, "run locally", "run the pipeline", "run tests", "validate repo", quick iteration, CPU-only smoke test, debugging the orchestrator/libraries, editing configs, or preparing changes before a remote GPU run. Parallel to the remote-gpu-run skill. Follows AGENTS.md.'
-argument-hint: 'Optional: config to run locally (default configs/example_run.json)'
+argument-hint: 'Optional: config to run locally (default configs/run_pipeline/demo/synthetic_workload_smoke.json)'
 ---
 
 # Local CPU Development
@@ -29,7 +29,7 @@ happens here.
    ```
 4. Run the pipeline locally:
    ```
-   python scripts/run.py --config configs/example_run.json
+   python scripts/run.py --config configs/run_pipeline/demo/synthetic_workload_smoke.json
    ```
    - Terminal progress (ASCII tables + sparkline graph) prints when
      `run.terminal_progress` is true in the config.

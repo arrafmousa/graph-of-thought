@@ -13,11 +13,11 @@ _REPO = Path(__file__).resolve().parents[3]
 def _run(tmp_path) -> Path:
     orchestrator = TuningOrchestrator(
         repo_root=tmp_path,
-        schema_path=_REPO / "configs" / "schema" / "tuning_config.schema.json",
+        schema_path=_REPO / "configs" / "tuning_pipeline" / "schema.json",
         tracked_packages=[],
     )
     return orchestrator.run(
-        config_path=_REPO / "configs" / "tune_demo.json",
+        config_path=_REPO / "configs" / "tuning_pipeline" / "demo" / "synthetic_cpu_merge_sweep.json",
         entrypoint="test",
         command="test",
     )

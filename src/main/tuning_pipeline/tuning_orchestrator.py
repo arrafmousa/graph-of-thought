@@ -9,7 +9,8 @@ each with both chains' recent token context so a human can judge semantic qualit
 
 It emits **one dashboard per configuration** plus a cross-configuration comparison
 dashboard and a machine-readable ``tuning_summary.json``. Once a heuristic + threshold
-are chosen here, they are set in the full-run config (``configs/graph_*.json``).
+are chosen here, they are set in the full-run config
+(``configs/graph_pipeline/<experiment>/*.json``).
 
 This is the only place the dataset, generation, reasoning-graph, and graph-report
 libraries are composed for the tuning phase (AGENTS.md section 3.2); it follows the
