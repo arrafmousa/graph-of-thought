@@ -7,6 +7,7 @@ import json
 import logging
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -180,7 +181,14 @@ class SemanticEvaluationOrchestrator:
         providers = {}
         generation_seed = config["randomness"]["seeds"]["generation"]
         global_index = 0
+        total_questions = sum(item["num_questions"] for item in config["datasets"])
         telemetry.emit("phase_start", _COMPONENT, "generation")
+        telemetry.component("log").update(
+            datetime.now(timezone.utc).isoformat(),
+            "phase generation",
+            f"{total_questions} questions x {config['generation']['num_chains']} chains "
+            f"(batch_size {config['generation']['batch_size']})",
+        )
         try:
             for dataset_config in config["datasets"]:
                 provider = self._build_dataset(dataset_config)
@@ -205,6 +213,8 @@ class SemanticEvaluationOrchestrator:
                         store,
                         telemetry,
                         logger,
+                        global_index,
+                        total_questions,
                     )
                     questions.append(
                         {
@@ -263,7 +273,8 @@ class SemanticEvaluationOrchestrator:
         return questions, providers
 
     def _generate_question(
-        self, entry, provider, model, config, seed, store, telemetry, logger
+        self, entry, provider, model, config, seed, store, telemetry, logger,
+        index, total,
     ) -> None:
         prompt = entry.build_prompt(config["model"]["system_instruction"])
         generation = config["generation"]
@@ -299,6 +310,13 @@ class SemanticEvaluationOrchestrator:
             metrics={"chains": len(traces), "correct": correct},
             payload={"dataset": entry.dataset, "question_id": entry.question_id},
         )
+        accuracy = correct / len(traces) if traces else 0.0
+        telemetry.component("values").update(index, accuracy)
+        telemetry.component("log").update(
+            datetime.now(timezone.utc).isoformat(),
+            f"generate {index + 1}/{total} {entry.dataset}",
+            f"{entry.question_id}: {len(traces)} chains, {correct} correct",
+        )
         logger.info("generated %s with %d chains", entry.question_id, len(traces))
 
     def _build_graphs(self, config, run_dir, questions, providers, telemetry, logger):
@@ -315,7 +333,13 @@ class SemanticEvaluationOrchestrator:
         graphs: list[dict[str, Any]] = []
         min_join = config["tuning"]["min_join_token_index"]
         skipped_first_token_merges = 0
+        settings = len(metrics) * len(config["tuning"]["thresholds"])
         telemetry.emit("phase_start", _COMPONENT, "consolidation")
+        telemetry.component("log").update(
+            datetime.now(timezone.utc).isoformat(),
+            "phase consolidation",
+            f"{len(questions)} questions x {settings} merge settings",
+        )
         for question_index, item in enumerate(questions):
             meta, chains = TraceLoader().load_question(run_dir / item["trace_dir"])
             chain_map = {chain.chain_id: chain for chain in chains}
@@ -400,6 +424,12 @@ class SemanticEvaluationOrchestrator:
                     "question_id": item["question_id"],
                 },
             )
+            telemetry.component("values").update(question_index, len(occurrences))
+            telemetry.component("log").update(
+                datetime.now(timezone.utc).isoformat(),
+                f"graphs {question_index + 1}/{len(questions)} {item['dataset']}",
+                f"{item['question_id']}: {len(occurrences)} judged pairs so far",
+            )
             logger.info("built graph sweep for %s", item["question_id"])
         (graph_root / "index.json").write_text(
             json.dumps({"graphs": graphs}, indent=2), encoding="utf-8"
@@ -480,6 +510,12 @@ class SemanticEvaluationOrchestrator:
             "judging",
             metrics={"unique_pairs": len(requests)},
         )
+        telemetry.component("log").update(
+            datetime.now(timezone.utc).isoformat(),
+            "phase judging",
+            f"submitting {len(requests)} unique pairs to {config['judge']['provider']} "
+            "(batch window may take a while)",
+        )
         try:
             results = judge.judge_pairs(requests=requests)
         finally:
@@ -487,6 +523,11 @@ class SemanticEvaluationOrchestrator:
             gc.collect()
         telemetry.emit(
             "phase_end", _COMPONENT, "judging", metrics={"unique_pairs": len(results)}
+        )
+        telemetry.component("log").update(
+            datetime.now(timezone.utc).isoformat(),
+            "phase judging done",
+            f"{len(results)} pairs judged",
         )
         return results
 

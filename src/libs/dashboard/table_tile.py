@@ -20,6 +20,9 @@ class TableTile(Tile):
         self._columns = list(columns)
         self._rows: list[list[str]] = []
 
+    # HTML keeps full history; the terminal view shows only this many recent rows.
+    _TERMINAL_ROW_LIMIT = 20
+
     def update(self, *cells: Any) -> None:
         if len(cells) != len(self._columns):
             raise ValueError(
@@ -32,4 +35,7 @@ class TableTile(Tile):
         return html_utils.table(self._columns, self._rows)
 
     def render_text(self) -> str:
-        return text_utils.ascii_table(self._columns, self._rows)
+        # Show only recent rows so long headless runs (e.g. Colab) do not flood
+        # the cell on every update; the HTML dashboard retains the full history.
+        recent = self._rows[-self._TERMINAL_ROW_LIMIT :]
+        return text_utils.ascii_table(self._columns, recent)
